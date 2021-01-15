@@ -15,9 +15,6 @@ const contract_address = '0xb017546303166A6D31935Bc5F5855C22315B0AC8'
 // the yCAKE token contract
 let contract
 
-// the name of our beloved bot
-const BOT_NAME = 'Medousa'
-
 // this helps us use markdown in our messages
 const markdown = Extra.markdown()
 
@@ -177,7 +174,7 @@ async function userHasEnoughTokens(userId) {
 async function joinWelcome(ctx) {
 	for (const message of [
 		`Hello ${ctx.message.from.first_name} 👋`,
-		`My name is ${BOT_NAME}` +
+		`My name is ${ctx.botInfo.first_name}` +
 		'Wanna be a part of something really exciting?',
 		'Of course you want 😎',
 		'Visit the following link and log in with your Telegram and MetaMask account to join:\nhttps://www.website.com'
@@ -274,8 +271,8 @@ bot.on('text', async (ctx) => {
 	const firstName = message.from.first_name
 	const repliedTo = message.reply_to_message
 
-	const help =	`*Hello, My name is ${BOT_NAME}*\n` +
-					'*Let me know how I can help you*\n\n' +
+	const help =	`*Hello, My name is ${ctx.botInfo.first_name}*\n` +
+					'*Call me if you need a helping hand*\n\n' +
 					'*Try these commands:*\n\n' +
 					'/help - show help\n' +
 					'/balance - get your balance\n' +
@@ -336,14 +333,14 @@ bot.on('text', async (ctx) => {
 				// send a cool doughnut chart
 				await tg.sendPhoto(
 					ctx.chat.id,
-					encodeURI(`https://quickchart.io/chart?bkg=white&c={ type: 'doughnut', data: { datasets: [ { data: [${ring0}, ${ring1}, ${ring2}, ${ring3}], backgroundColor: ['rgb(254, 208, 209)','rgb(192, 235, 196)','rgb(171, 217, 246)','rgb(248, 249, 202)'], label: 'Premium users', }, ], labels: ['Admin', 'Diamond', 'Advanced', 'Premium'], }, options: { title: { display: true, text: '${groupName} members', }, },}`),
+					encodeURI(`https://quickchart.io/chart?bkg=white&c={ type: 'doughnut', data: { datasets: [ { data: [${ring0}, ${ring1}, ${ring2}, ${ring3}], backgroundColor: ['rgb(242, 104, 107)','rgb(106, 212, 116)','rgb(91, 165, 212)','rgb(217, 190, 69)'], label: 'Dispersion of the ${groupName} premium members', }, ], labels: ['Admin', 'Diamond', 'Advanced', 'Premium'], }, options: { plugins: { datalabels: { color: 'white' }}, title: { display: true, text: '${groupName} members', }, },}`),
 					{ caption: `Here is a cool doughnut chart which shows the dispersion of premium users in the group '${groupName}'` }
 				)
 
 				// send a cool bar chart
 				return await tg.sendPhoto(
 					ctx.chat.id,
-					encodeURI(`https://quickchart.io/chart?bkg=white&c={type:'bar', data: { labels: [${users}], datasets: [{ label: '${tokenName}', data: [${values}], backgroundColor: getGradientFillHelper('horizontal', ['rgb(171, 217, 246)', 'rgb(192, 235, 196)']), }] }}`),
+					encodeURI(`https://quickchart.io/chart?bkg=white&c={type:'bar', data: { labels: [${users}], datasets: [{ label: '${tokenName}', data: [${values}], backgroundColor: getGradientFillHelper('horizontal', ['rgb(91, 165, 212)', 'rgb(106, 212, 116)']), }] }}`),
 					{ caption: `Here is another cool graph representing the amount of ${tokenName} in each member's wallet` }
 				)
 
