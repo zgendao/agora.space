@@ -2,6 +2,8 @@ const { TOKEN, GRP_ID } = require('./.secret.js')
 const { Telegraf, Markup } = require('telegraf')
 const Extra = require('telegraf/extra')
 const Web3 = require('web3')
+const util = require('ethereumjs-util')
+const utils = require('web3-utils')
 const low = require('lowdb')
 const FileSync = require('lowdb/adapters/FileSync')
 const request = require('request')
@@ -174,7 +176,7 @@ async function userHasEnoughTokens(userId) {
 async function joinWelcome(ctx) {
 	for (const message of [
 		`Hello ${ctx.message.from.first_name} 👋`,
-		`My name is ${ctx.botInfo.first_name}` +
+		`My name is ${ctx.botInfo.first_name}`,
 		'Wanna be a part of something really exciting?',
 		'Of course you want 😎',
 		'Visit the following link and log in with your Telegram and MetaMask account to join:\nhttps://www.website.com'
@@ -182,11 +184,11 @@ async function joinWelcome(ctx) {
 		await ctx.reply(message)
 }
 
-// a function to let the user whether they succeeded
+// a function to let the user know whether they succeeded
 async function joinCheckSuccess(ctx) {
-	await ctx.reply(
-		`Congratulations!🎉 Now you can join our super secret group:\n${(await tg.getChat(GRP_ID)).invite_link}`
-	)
+	// generate and send an invite link
+	await ctx.reply(`Congratulations!🎉 Now you can join our super secret group:\n${await tg.exportChatInviteLink(GRP_ID)}`)
+
 	// clapping pepe sticker
 	await ctx.replyWithSticker('CAACAgQAAxkBAAEEjKhf-I1-Vrd1hImudFl7kkTnDXAhgAACTAEAAqghIQZjKrRWscYWyB4E')
 }
@@ -215,22 +217,30 @@ async function kickUser(userId, reason) {
 
 // listening on new chat with a Telegram user
 bot.start(async (ctx) => {
-	await joinWelcome(ctx)
+	let enc = new TextEncoder()
+
+	// TODO: get the signed string
 
 	const userId = ctx.message.from.id
 
 	if (!await isAdmin(userId))
 		tg.unbanChatMember(GRP_ID, userId)
 
-	//TODO: webview validation
-	const address = '0x2921b88e261192483932F0B59DA9B0964A893E1c'
+	if (signed === undefined) {
+		await joinWelcome(ctx)
+	} else {
+		const sig = util.fromRpcSig(signed)
+		const publicKey = util.ecrecover(util.toBuffer(utils.sha3('test')), sig.v, sig.r, sig.s)
+		const address = `0x${util.pubToAddress(publicKey).toString('hex')}`
 
-	await addUser(userId, address)
+		// add the user to the database
+		await addUser(userId, address)
 
-	if (await userHasEnoughTokens(userId))
-		await joinCheckSuccess(ctx)
-	else
-		await joinCheckFailure(ctx)
+		if (await userHasEnoughTokens(userId))
+			await joinCheckSuccess(ctx)
+		else
+			await joinCheckFailure(ctx)
+	}
 })
 
 // listening on new members joining our group
@@ -366,7 +376,7 @@ bot.on('text', async (ctx) => {
 
 	switch (msg) {
 		case '/balance': // reply with the balance of the user who asks for it
-			return ctx.reply(`Hi ${firstName}, your balance is ${await balanceOf(userId)} yCAKEs`)
+			return ctx.reply(`Hi ${firstName}, you have ${await balanceOf(userId)} yCAKE tokens in your wallet`)
 
 		case '@admin': // tags all the admins
 			let admins = ''
