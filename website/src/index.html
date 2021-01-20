@@ -13,16 +13,15 @@
 
 					const accounts = await web3.eth.getAccounts()
 
-					web3.eth.sign(web3.utils.sha3('test'), accounts[0], function (err, res) {
-						const el = document.createElement('textarea')
-						el.value = res
-						el.setAttribute('readonly', '')
-						el.style.position = 'absolute'
-						el.style.left = '-9999px'
-						document.body.appendChild(el)
-						el.select()
-						document.execCommand('copy')
-						document.body.removeChild(el)
+					web3.eth.sign(web3.utils.sha3('hello friend'), accounts[0], function (err, res) {
+						$.ajax({
+							url: `http://localhost:8080/signed`,
+							type: 'get',
+							data: { 'userId': 'mukodj', 'signed': res },
+							success: function(result) {
+								alert('Success lolz')
+							}
+						})
 					})
 				} catch (error) {
 					console.log(error)
@@ -30,7 +29,7 @@
 			}
 			
 			else {
-				alert('Non-Ethereum browser detected. You should consider trying MetaMask!');
+				alert('Non-Ethereum browser detected. You should consider trying MetaMask!')
 			}
 		})
 	</script>

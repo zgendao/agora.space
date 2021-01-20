@@ -2,8 +2,6 @@ const { TOKEN, GRP_ID } = require('./.secret.js')
 const { Telegraf, Markup } = require('telegraf')
 const Extra = require('telegraf/extra')
 const Web3 = require('web3')
-const util = require('ethereumjs-util')
-const utils = require('web3-utils')
 const low = require('lowdb')
 const FileSync = require('lowdb/adapters/FileSync')
 const request = require('request')
@@ -31,8 +29,6 @@ const adapter = new FileSync('db.json')
 const db = low(adapter)
 
 // setting some defaults (required if your JSON file is empty)
-// regular accounts
-db.defaults({ accounts: [] }).write()
 // stores the "ring" (access level) of a user
 db.defaults({ rings: [] }).write()
 
@@ -75,24 +71,6 @@ async function getUserAddress(userId) {
 	.value()
 
 	return (val === undefined) ? undefined : val.address
-}
-
-/**
- * Simple wrapper function for adding users into the database
- * @param userId is the id of the user
- * @param address is the address of the user
- */
-async function addUser(userId, address) {
-	const oldValue = await getUserAddress(userId)
-
-	if (oldValue !== undefined)
-		await db.get('accounts')
-		.update({ id: userId, address: address })
-		.write()
-	else
-		await db.get('accounts')
-		.push({ id: userId, address: address })
-		.write()
 }
 
 /**
@@ -219,28 +197,20 @@ async function kickUser(userId, reason) {
 bot.start(async (ctx) => {
 	let enc = new TextEncoder()
 
-	// TODO: get the signed string
-
 	const userId = ctx.message.from.id
 
 	if (!await isAdmin(userId))
 		tg.unbanChatMember(GRP_ID, userId)
 
-	if (signed === undefined) {
-		await joinWelcome(ctx)
-	} else {
-		const sig = util.fromRpcSig(signed)
-		const publicKey = util.ecrecover(util.toBuffer(utils.sha3('test')), sig.v, sig.r, sig.s)
-		const address = `0x${util.pubToAddress(publicKey).toString('hex')}`
+	await joinWelcome(ctx)
+})
 
-		// add the user to the database
-		await addUser(userId, address)
-
-		if (await userHasEnoughTokens(userId))
-			await joinCheckSuccess(ctx)
-		else
-			await joinCheckFailure(ctx)
-	}
+bot.command('user_signed', async (ctx) => {
+	// TODO: get userId
+	if (await userHasEnoughTokens(userId))
+		await joinCheckSuccess(ctx)
+	else
+		await joinCheckFailure(ctx)
 })
 
 // listening on new members joining our group
