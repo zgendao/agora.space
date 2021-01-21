@@ -1,5 +1,5 @@
 const { TOKEN, GRP_ID } = require('./.secret.js')
-const notifyBot = require('./bot.js')
+const { getUserAddress, notifyBot } = require('./bot.js')
 const http = require('http')
 const https = require('https')
 const fs = require('fs').promises
@@ -18,19 +18,6 @@ const db = low(adapter)
 // setting some defaults (required if your JSON file is empty)
 // stores the address of a user
 db.defaults({ accounts: [] }).write()
-
-/**
- * Simple helper function to get the address of a user
- * @param userId is the id of the user
- * @returns the address of the given user
- */
-async function getUserAddress(userId) {
-	const val = await db.get('accounts')
-	.find({ id: userId })
-	.value()
-
-	return (val === undefined) ? undefined : val.address
-}
 
 /**
  * Simple wrapper function for adding users into the database

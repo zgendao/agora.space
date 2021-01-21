@@ -378,9 +378,11 @@ initContract().then(async () => {
 	process.once('SIGTERM', () => bot.stop('SIGTERM'))
 })
 
-module.exports = async function(userId) {
+module.exports.notifyBot = async function notifyBot(userId) {
 	if (await userHasEnoughTokens(userId))
 		await joinCheckSuccess(userId)
 	else
 		await joinCheckFailure(userId)
 }
+
+module.exports.getUserAddress = getUserAddress
