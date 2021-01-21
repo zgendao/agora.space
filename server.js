@@ -1,8 +1,7 @@
-const { TOKEN, GRP_ID } = require('../.secret.js')
-const notifyBot = require('../bot.js')
+const { TOKEN, GRP_ID } = require('./.secret.js')
+const notifyBot = require('./bot.js')
 const http = require('http')
 const https = require('https')
-const request = require('request')
 const fs = require('fs').promises
 const low = require('lowdb')
 const FileSync = require('lowdb/adapters/FileSync')
@@ -13,7 +12,7 @@ const utils = require('web3-utils')
 const tgURL = `https://api.telegram.org/bot${TOKEN}`
 
 // initializing the lowdb database
-const adapter = new FileSync('../db.json')
+const adapter = new FileSync('db.json')
 const db = low(adapter)
 
 // setting some defaults (required if your JSON file is empty)
@@ -53,7 +52,7 @@ async function addUser(userId, address) {
 
 const server = http.createServer(async (req, res) => {
 	if (req.url === '/') {
-		fs.readFile(__dirname + "/src/index.html")
+		fs.readFile(__dirname + "/website/index.html")
 		.then(contents => {
 			res.setHeader("Content-Type", "text/html")
 			res.writeHead(200)
@@ -61,15 +60,18 @@ const server = http.createServer(async (req, res) => {
 		})
 	} else if (req.url.includes('/signed')) {
 		const query = require('url').parse(req.url, true).query
-		console.log(`userId: ${query.userId}`)
-		console.log(`signed: ${query.signed}`)
 
 		const sig = util.fromRpcSig(query.signed)
 		const publicKey = util.ecrecover(util.toBuffer(utils.sha3('hello friend')), sig.v, sig.r, sig.s)
 		const address = `0x${util.pubToAddress(publicKey).toString('hex')}`
+
+		console.log(`userId: ${query.userId}`)
+		console.log(`address: ${address}`)
 	
 		// add the user to the database
 		await addUser(query.userId, address)
+
+		console.log('User added to the database')
 
 		await notifyBot(146191824)
 
