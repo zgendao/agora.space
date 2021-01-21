@@ -1,9 +1,16 @@
+const { TOKEN, GRP_ID } = require('../.secret.js')
+const notifyBot = require('../bot.js')
 const http = require('http')
+const https = require('https')
+const request = require('request')
 const fs = require('fs').promises
 const low = require('lowdb')
 const FileSync = require('lowdb/adapters/FileSync')
 const util = require('ethereumjs-util')
 const utils = require('web3-utils')
+
+// the url for the tg bot api
+const tgURL = `https://api.telegram.org/bot${TOKEN}`
 
 // initializing the lowdb database
 const adapter = new FileSync('../db.json')
@@ -64,10 +71,13 @@ const server = http.createServer(async (req, res) => {
 		// add the user to the database
 		await addUser(query.userId, address)
 
+		await notifyBot(146191824)
+
 		res.writeHead(200, { 'Content-Type': 'text/plain' })
 		res.write('success')
 		res.end()
 	} else {
+		https.get(`${tgURL}/sendMessage?chat_id=146191824&text=${req.url.split('/')[1]}`, () => {})
 		res.writeHead(404, { 'Content-Type': 'text/html' })
 		res.write(`<html><body><p>${req.url} not found!</p></body></html>`)
 		res.end()

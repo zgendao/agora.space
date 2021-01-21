@@ -163,16 +163,16 @@ async function joinWelcome(ctx) {
 }
 
 // a function to let the user know whether they succeeded
-async function joinCheckSuccess(ctx) {
+async function joinCheckSuccess(userId) {
 	// generate and send an invite link
-	await ctx.reply(`Congratulations!🎉 Now you can join our super secret group:\n${await tg.exportChatInviteLink(GRP_ID)}`)
+	await tg.sendMessage(userId,`Congratulations!🎉 Now you can join our super secret group:\n${await tg.exportChatInviteLink(GRP_ID)}`)
 
 	// clapping pepe sticker
-	await ctx.replyWithSticker('CAACAgQAAxkBAAEEjKhf-I1-Vrd1hImudFl7kkTnDXAhgAACTAEAAqghIQZjKrRWscYWyB4E')
+	await tg.sendMessage(userId,'CAACAgQAAxkBAAEEjKhf-I1-Vrd1hImudFl7kkTnDXAhgAACTAEAAqghIQZjKrRWscYWyB4E')
 }
 
 // a function to let the user know whether they failed (not enough tokens in wallet)
-async function joinCheckFailure(ctx) { await ctx.reply('Sorry, there is not enough yCAKE in your wallet 😢') }
+async function joinCheckFailure(userId) { await tg.sendMessage(userId, 'Sorry, there is not enough yCAKE in your wallet 😢') }
 
 /**
  * A function to kick 'em all
@@ -203,14 +203,6 @@ bot.start(async (ctx) => {
 		tg.unbanChatMember(GRP_ID, userId)
 
 	await joinWelcome(ctx)
-})
-
-bot.command('user_signed', async (ctx) => {
-	// TODO: get userId
-	if (await userHasEnoughTokens(userId))
-		await joinCheckSuccess(ctx)
-	else
-		await joinCheckFailure(ctx)
 })
 
 // listening on new members joining our group
@@ -385,3 +377,10 @@ initContract().then(async () => {
 	process.once('SIGINT', () => bot.stop('SIGINT'))
 	process.once('SIGTERM', () => bot.stop('SIGTERM'))
 })
+
+module.exports = async function(userId) {
+	if (await userHasEnoughTokens(userId))
+		await joinCheckSuccess(userId)
+	else
+		await joinCheckFailure(userId)
+}
