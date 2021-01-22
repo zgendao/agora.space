@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 	<div id="tg-link"></div>
+	<button id="sign" style="display: none" onclick="sign()">Verify address</button>
 	
 	<script src="https://cdn.jsdelivr.net/gh/ethereum/web3.js@1.0.0-beta.36/dist/web3.min.js" integrity="sha256-nWBTbvxhJgjslRyuAKJHK+XcZPlCnmIAAMixz6EefVk=" crossorigin="anonymous"></script>
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
@@ -17,6 +18,8 @@
 			lastName = user.last_name
 
 			console.log(userId)
+			$('#tg-link').hide()
+			$('#sign').show()
 		}
 
 		function sign() {
@@ -47,6 +50,4 @@
 				alert('Non-Ethereum browser detected. You should consider trying MetaMask!')
 		})
 	</script>
-
-	<button onclick="sign()">Verify address</button>
 </html>
