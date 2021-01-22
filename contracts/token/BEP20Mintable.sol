@@ -1,29 +1,40 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.7.0;
+pragma solidity 0.7.6;
 
 import "./BEP20.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 
-/// @title Mintable BEP20 token
+/// @title Mintable BEP20 token used as return token for staking
 contract BEP20Mintable is BEP20, AccessControl {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
-    constructor(string memory name, string memory symbol)
-    BEP20(name, symbol)
+    constructor(string memory _name, string memory _symbol)
+    BEP20(_name, _symbol)
     {
+        // Initially, make the deployer the admin
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
-        _setupRole(MINTER_ROLE, _msgSender());
     }
 
-    /// @notice Mint amount tokens to account account
-    function mint(address account, uint256 amount) public {
-        require(hasRole(MINTER_ROLE, _msgSender()));
-        _mint(account, amount);
+    /// @notice Mints tokens to an account
+    /// @param _account The address receiving the tokens
+    /// @param _amount The amount of tokens to be minted
+    function mint(address _account, uint256 _amount) external {
+        require(hasRole(MINTER_ROLE, _msgSender()), "!minter");
+        _mint(_account, _amount);
     }
 
-    /// @notice Burn amount tokens from account account
-    function burn(address account, uint256 amount) public {
-        require(hasRole(MINTER_ROLE, _msgSender()));
-        _burn(account, amount);
+    /// @notice Burns tokens from an account
+    /// @param _account The address the tokens will be burnt from
+    /// @param _amount The amount of tokens to be burned
+    function burn(address _account, uint256 _amount) external {
+        require(hasRole(MINTER_ROLE, _msgSender()), "!minter");
+        _burn(_account, _amount);
+    }
+
+    /// @notice Grants the permission to mint/burn tokens to/from an address
+    /// @param _account The address that gets the role
+    function grantMinterRole(address _account) external {
+        require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "!admin");
+        grantRole(MINTER_ROLE, _account);
     }
 }
