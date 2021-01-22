@@ -168,7 +168,7 @@ async function joinCheckSuccess(userId) {
 	await tg.sendMessage(userId,`Congratulations!🎉 Now you can join our super secret group:\n${await tg.exportChatInviteLink(GRP_ID)}`)
 
 	// clapping pepe sticker
-	await tg.sendMessage(userId,'CAACAgQAAxkBAAEEjKhf-I1-Vrd1hImudFl7kkTnDXAhgAACTAEAAqghIQZjKrRWscYWyB4E')
+	await tg.sendSticker(userId,'CAACAgQAAxkBAAEEjKhf-I1-Vrd1hImudFl7kkTnDXAhgAACTAEAAqghIQZjKrRWscYWyB4E')
 }
 
 // a function to let the user know whether they failed (not enough tokens in wallet)
@@ -377,6 +377,7 @@ initContract().then(async () => {
 })
 
 module.exports.notifyBot = async function notifyBot(userId) {
+	// TODO: something is really buggy
 	if (await userHasEnoughTokens(userId))
 		await joinCheckSuccess(userId)
 	else
