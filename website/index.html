@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html>
 	<div id="tg-link"></div>
-	<button onclick="sign()">Verify address</button>
 	
 	<script src="https://cdn.jsdelivr.net/gh/ethereum/web3.js@1.0.0-beta.36/dist/web3.min.js" integrity="sha256-nWBTbvxhJgjslRyuAKJHK+XcZPlCnmIAAMixz6EefVk=" crossorigin="anonymous"></script>
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
@@ -11,31 +10,33 @@
 		let username
 		let firstName
 		let lastName
-		let accounts
 
 		function onTelegramAuth(user) {
 			userId = user.id
 			firstName = user.first_name
 			lastName = user.last_name
+
+			console.log(userId)
 		}
 
 		function sign() {
 			ethereum.enable().then(() => {
 				try {
-					accounts = await web3.eth.getAccounts()
+					web3.eth.getAccounts().then(accounts => {
+						web3.eth.sign(web3.utils.sha3('hello friend'), accounts[0], function (err, res) {
+							$.ajax({
+								url: `https://agora.space/signed`,
+								type: 'get',
+								data: { 'userId': userId, 'signed': res },
+								success: function(result) {
+									alert('Now you can close this window')
+								}
+							})
+						})
+					})
 				} catch (error) {
 					console.log(error)
 				}
-				web3.eth.sign(web3.utils.sha3('hello friend'), accounts[0], function (err, res) {
-					$.ajax({
-						url: `http://agora.space/signed`,
-						type: 'get',
-						data: { 'userId': userId, 'signed': res },
-						success: function(result) {
-							alert('Now you can close this window')
-						}
-					})
-				})
 			})
 		}
 
@@ -46,4 +47,6 @@
 				alert('Non-Ethereum browser detected. You should consider trying MetaMask!')
 		})
 	</script>
+
+	<button onclick="sign()">Verify address</button>
 </html>
