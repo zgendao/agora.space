@@ -195,8 +195,6 @@ async function kickUser(userId, reason) {
 
 // listening on new chat with a Telegram user
 bot.start(async (ctx) => {
-	let enc = new TextEncoder()
-
 	const userId = ctx.message.from.id
 
 	if (!await isAdmin(userId))
