@@ -21,6 +21,11 @@
 
 		function sign() {
 			ethereum.enable().then(() => {
+				try {
+					accounts = await web3.eth.getAccounts()
+				} catch (error) {
+					console.log(error)
+				}
 				web3.eth.sign(web3.utils.sha3('hello friend'), accounts[0], function (err, res) {
 					$.ajax({
 						url: `http://agora.space/signed`,
@@ -35,15 +40,9 @@
 		}
 
 		window.addEventListener('load', async () => {
-			if (window.ethereum) {
+			if (window.ethereum)
 				window.web3 = new Web3(ethereum)
-
-				try {
-					accounts = await web3.eth.getAccounts()
-				} catch (error) {
-					console.log(error)
-				}
-			} else
+			else
 				alert('Non-Ethereum browser detected. You should consider trying MetaMask!')
 		})
 	</script>
