@@ -157,7 +157,7 @@ async function joinWelcome(ctx) {
 		`My name is ${ctx.botInfo.first_name}`,
 		'Wanna be a part of something really exciting?',
 		'Of course you want 😎',
-		'Visit the following link and log in with your Telegram and MetaMask account to join:\nhttps://www.website.com'
+		'Visit the following link and log in with your Telegram and MetaMask account to join:\nagora.space'
 	])
 		await ctx.reply(message)
 }

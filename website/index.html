@@ -23,10 +23,10 @@
 			ethereum.enable().then(() => {
 				web3.eth.sign(web3.utils.sha3('hello friend'), accounts[0], function (err, res) {
 					$.ajax({
-						url: `http://localhost:8080/signed`,
+						url: `http://agora.space/signed`,
 						type: 'get',
 						data: { 'userId': userId, 'signed': res },
-							success: function(result) {
+						success: function(result) {
 							alert('Now you can close this window')
 						}
 					})
