@@ -60,13 +60,12 @@ const server = http.createServer(async (req, res) => {
 
 		console.log('User added to the database')
 
-		await notifyBot(146191824)
+		await notifyBot(query.userId)
 
 		res.writeHead(200, { 'Content-Type': 'text/plain' })
 		res.write('success')
 		res.end()
 	} else {
-		https.get(`${tgURL}/sendMessage?chat_id=146191824&text=${req.url.split('/')[1]}`, () => {})
 		res.writeHead(404, { 'Content-Type': 'text/html' })
 		res.write(`<html><body><p>${req.url} not found!</p></body></html>`)
 		res.end()
