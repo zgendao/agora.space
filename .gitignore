@@ -2,3 +2,4 @@ node_modules/
 .secret.js
 db.json
 .mnemonic
+build/

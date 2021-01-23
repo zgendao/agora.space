@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.7.6;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "./token/IBEP20.sol";
 import "./token/BEP20Mintable.sol";
 
 /// @title A contract for staking tokens
@@ -23,18 +21,20 @@ contract Staking is Ownable {
     event Deposit(address account, uint256 amount);
     event Withdraw(address account, uint256 amount);
 
+    /// @param _stakeTokenAddress The address of the token to be staked, that the contract accepts
+    /// @param _returnTokenAddress The address of the token that's given in return
     constructor(address _stakeTokenAddress, address _returnTokenAddress) {
         stakeToken = IBEP20(_stakeTokenAddress);
         returnToken = BEP20Mintable(_returnTokenAddress);
     }
 
     /// @notice Accepts tokens, locks them and gives different tokens in return
+    /// @dev The depositor should approve the contract to manage stakingTokens
     /// @dev For minting returnTokens, this contract should have MINTER_ROLE
     /// @param _amount The amount to be deposited in the smallest unit of the token
     function deposit(uint256 _amount) public {
         require(_amount > 0, "Deposit amount non-positive");
         require(stakeToken.allowance(msg.sender, address(this)) >= _amount, "Allowance not sufficient");
-        require(stakeToken.balanceOf(msg.sender) >= _amount, "Sender's balance not sufficient");
         stakeToken.transferFrom(msg.sender, address(this), _amount);
         returnToken.mint(msg.sender, _amount);
         locked memory timelockData;
@@ -46,6 +46,7 @@ contract Staking is Ownable {
 
     /// @notice If the timelock is expired, gives back the staked tokens in return for the tokens obtained while depositing
     /// @dev This contract should have sufficient allowance to be able to burn returnTokens from the user
+    /// @dev For burning returnTokens, this contract should have MINTER_ROLE
     /// @param _amount The amount to be withdrawn in the smallest unit of the token
     function withdraw(uint256 _amount) public {
         require(_amount > 0, "Withdraw amount non-positive");
