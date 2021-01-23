@@ -11,6 +11,8 @@ const bscscanapi = 'https://api.bscscan.com/api'
 
 // address for the yCAKE token contract
 const contract_address = '0xb017546303166A6D31935Bc5F5855C22315B0AC8'
+const groupName = 'yCAKE Gang'
+const tokenName = 'yCAKE'
 
 // the yCAKE token contract
 let contract
@@ -67,7 +69,7 @@ async function initContract() {
  */
 async function getUserAddress(userId) {
 	const val = await db.get('accounts')
-	.find({ id: userId })
+	.find({ id: userId.toString() })
 	.value()
 
 	return (val === undefined) ? undefined : val.address
@@ -80,7 +82,7 @@ async function getUserAddress(userId) {
  */
 async function getUserRing(userId) {
 	const val = await db.get('rings')
-	.find({ id: userId })
+	.find({ id: userId.toString() })
 	.value()
 
 	return (val === undefined) ? undefined : val.ring
@@ -93,7 +95,7 @@ async function getUserRing(userId) {
  */
 async function isAdmin(userId) {
 	for (const admin of await tg.getChatAdministrators(GRP_ID))
-		if (admin.user.id === userId)
+		if (admin.user.id.toString() === userId)
 			return true
 
 	return false
@@ -105,8 +107,7 @@ async function isAdmin(userId) {
  * @returns the balance of a user
  */
 async function balanceOf(userId) {
-	const address = await getUserAddress(userId)
-	return await contract.methods.balanceOf(address).call() / 10 ** 18
+	return await contract.methods.balanceOf(await getUserAddress(userId)).call() / 10 ** 18
 }
 
 async function userHasEnoughTokens(userId) {
@@ -186,6 +187,10 @@ async function kickUser(userId, reason) {
 	// kick the member from the group
 	await tg.kickChatMember(GRP_ID, userId)
 
+	await db.get('accounts')
+	.remove({ id: userId.toString() })
+	.write()
+
 	// get the new number of group members
 	const survivorCount = await tg.getChatMembersCount(GRP_ID)
 
@@ -207,8 +212,8 @@ bot.start(async (ctx) => {
 bot.on('new_chat_members', async (ctx) => {
 	const member = ctx.message.new_chat_member
 
-	if (getUserAddress(member.id) === undefined)
-		kickUser(member.id) // kick the user if joined accidentally
+	if (await getUserAddress(member.id) === undefined)
+		await kickUser(member.id) // kick the user if joined accidentally
 	else
 		await ctx.reply(
 			`Hi, ${member.first_name}! 😄 Welcome to the ${(await tg.getChat(GRP_ID)).title}! 🎉`
@@ -271,6 +276,9 @@ bot.on('text', async (ctx) => {
 				// get the id of the user who sent the message
 				return ctx.reply(repliedTo.from.id)
 
+			case '/userbalance':
+				return ctx.reply(`The user has ${await balanceOf(repliedTo.from.id)} ${tokenName} tokens in his wallet`)
+
 			case '/stats':
 				// get the user statistics
 				let users = `'valid', 'sanya', 'peti', 'jani',`, values = `10, 50, 12, 24,`
@@ -296,9 +304,6 @@ bot.on('text', async (ctx) => {
 					users += `'${member.username}',`
 					values += `${await balanceOf(member.id)},`
 				}
-
-				const groupName = 'yCAKE Gang'
-				const tokenName = 'yCAKE'
 
 				// send a cool doughnut chart
 				await tg.sendPhoto(
@@ -360,16 +365,19 @@ initContract().then(async () => {
 		// loop through all the accounts in the database
 		for (const account of await db.get('accounts')) {
 			const userId = account.id
-			const admin = await isAdmin(userId)
+
+			console.log(`User ${userId}'s address is ${account.address}`)
 
 			// and kick the user if they do not have enough yCAKE tokens
-			if (!await userHasEnoughTokens(userId) && !admin)
-				kickUser(userId, 'they didn\'t have enough tokens 😢')
+			if (!await isAdmin(userId) && !await userHasEnoughTokens(userId))
+				await kickUser(userId, 'they didn\'t have enough tokens 😢')
 		}
 	}
 
+	await cb()
+
 	// repeat this action every half an hour
-	await setInterval(cb, 30 * 60 * 1000)
+	await setInterval(await cb, 30 * 60 * 1000)
 
 	// enable graceful stop
 	process.once('SIGINT', () => bot.stop('SIGINT'))
