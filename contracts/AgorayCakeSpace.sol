@@ -69,10 +69,12 @@ contract AgorayCakeSpace is Ownable {
     function getLockedAmount(address _investor) internal returns (uint256) {
         uint256 lockedAmount = 0;
         locked[] storage usersLocked = timelocks[_investor];    // storage -> modifies members directly in the original array
-        for(uint256 i = 0; i < usersLocked.length; i++) {
-            if (usersLocked[i].expires <= block.timestamp) {
+        uint256 usersLockedLength = usersLocked.length;
+        uint256 blockTimestamp = block.timestamp;
+        for(uint256 i = 0; i < usersLockedLength; i++) {
+            if (usersLocked[i].expires <= blockTimestamp) {
                 // Expired locks, remove them
-                usersLocked[i] = usersLocked[usersLocked.length - 1];
+                usersLocked[i] = usersLocked[usersLockedLength - 1];
                 usersLocked.pop();
             } else {
                 // Still not expired, count it in
