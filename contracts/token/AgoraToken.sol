@@ -5,7 +5,7 @@ import "./BEP20.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 
 /// @title Mintable BEP20 token used as return token for staking
-contract BEP20Mintable is BEP20, AccessControl {
+contract AgoraToken is BEP20, AccessControl {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
     constructor(string memory _name, string memory _symbol)
@@ -29,12 +29,5 @@ contract BEP20Mintable is BEP20, AccessControl {
     function burn(address _account, uint256 _amount) external {
         require(hasRole(MINTER_ROLE, _msgSender()), "!minter");
         _burn(_account, _amount);
-    }
-
-    /// @notice Grants the permission to mint/burn tokens to/from an address
-    /// @param _account The address that gets the role
-    function grantMinterRole(address _account) external {
-        require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "!admin");
-        grantRole(MINTER_ROLE, _account);
     }
 }

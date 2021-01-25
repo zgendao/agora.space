@@ -1,12 +1,12 @@
 // Token properties
 // NOTE: change them before deploying
 const stakeTokenAddress = "";
-const returnTokenName = "aCake Token";
-const returnTokenSymbol = "aCAKE";
+const returnTokenName = "Agora Token";
+const returnTokenSymbol = "AGT";
 
 // Contracts
-const staking = artifacts.require("Staking");
-const returnToken = artifacts.require("BEP20Mintable");
+const staking = artifacts.require("AgorayCakeSpace");
+const returnToken = artifacts.require("AgoraToken");
 
 // Deploy the returnToken and then the staking contract
 module.exports = function(deployer) {

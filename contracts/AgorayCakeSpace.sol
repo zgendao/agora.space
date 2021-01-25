@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.7.6;
 
-import "./token/BEP20Mintable.sol";
+import "./token/AgoraToken.sol";
 
 /// @title A contract for staking tokens
-contract Staking is Ownable {
+contract AgorayCakeSpace is Ownable {
 
     // Tokens managed by the contract
     IBEP20 internal stakeToken;
-    BEP20Mintable internal returnToken;
+    AgoraToken internal returnToken;
 
     // For timelock
     struct locked {
@@ -25,7 +25,7 @@ contract Staking is Ownable {
     /// @param _returnTokenAddress The address of the token that's given in return
     constructor(address _stakeTokenAddress, address _returnTokenAddress) {
         stakeToken = IBEP20(_stakeTokenAddress);
-        returnToken = BEP20Mintable(_returnTokenAddress);
+        returnToken = AgoraToken(_returnTokenAddress);
     }
 
     /// @notice Accepts tokens, locks them and gives different tokens in return
