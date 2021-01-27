@@ -9,8 +9,8 @@ const request = require('request')
 // bscscan API
 const bscscanapi = 'https://api.bscscan.com/api'
 
-// address for the yCAKE token contract
-const contract_address = '0xb017546303166A6D31935Bc5F5855C22315B0AC8'
+// address for the yCAKE Agora Token contract
+const contract_address = '0xB32e35AfFc06FB8928537a64dc8BdE18d4d720b9'
 const groupName = 'yCAKE Gang'
 const tokenName = 'yCAKE'
 
@@ -95,7 +95,7 @@ async function getUserRing(userId) {
  */
 async function isAdmin(userId) {
 	for (const admin of await tg.getChatAdministrators(GRP_ID))
-		if (admin.user.id.toString() === userId)
+		if (admin.user.id.toString() === userId.toString())
 			return true
 
 	return false
@@ -106,13 +106,13 @@ async function isAdmin(userId) {
  * @param userId is the id of the user
  * @returns the balance of a user
  */
-async function balanceOf(userId) {
+async function howMuchInvested(userId) {
 	return await contract.methods.balanceOf(await getUserAddress(userId)).call() / 10 ** 18
 }
 
-async function userHasEnoughTokens(userId) {
-	// getting the user's yCAKE balance
-	const balance = await balanceOf(userId)
+async function userHasInvestedEnoughTokens(userId) {
+	// getting the amount of tokens the user has invested
+	const balance = await howMuchInvested(userId)
 
 	if (balance >= 10) {
 		// access levels, just like at the Operating Systems
@@ -250,79 +250,79 @@ bot.on('text', async (ctx) => {
 					'*Call me if you need a helping hand*\n\n' +
 					'*Try these commands:*\n\n' +
 					'/help - show help\n' +
-					'/balance - get your balance\n' +
 					'@admin - tag all the admins'
 
 	if (await isAdmin(userId)) {
-		switch (msg) {
-			case '/help':
-				return ctx.replyWithMarkdown(
-					help +
-					'\n\n*Only for admins:*\n' +
-					'\n/ping - check if the bot is alive\n' +
-					'/broadcast <message> - send a message to the group\n' +
-					'/userid - get the id of the user who sent the message\n' +
-					'/kick - kick the user who sent the message\n' +
-					'/stats - get group member statistics\n' +
-					'/json - get the message as a JSON object',
-					markdown
-				)
+		if (msg.includes('/help'))
+			return ctx.replyWithMarkdown(
+				help +
+				'\n\n*Only for admins:*\n' +
+				'\n/ping - check if the bot is alive\n' +
+				'/broadcast <message> - send a message to the group\n' +
+				'/userid - get the id of the user who sent the message\n' +
+				'/kick - kick the user who sent the message\n' +
+				'/stats - get group member statistics\n' +
+				'/userinvested - shows the amount of tokens the user has invested\n' +
+				'/json - get the message as a JSON object',
+				markdown
+			)
 
-			case '/ping':
-				// check if the bot is alive
-				return ctx.reply('I\'m still standing')
+		if (msg.includes('/ping'))
+			// check if the bot is alive
+			return ctx.reply('I\'m still standing')
 
-			case '/userid':
-				// get the id of the user who sent the message
-				return ctx.reply(repliedTo.from.id)
+		if (msg.includes('/userid'))
+			// get the id of the user who sent the message
+			return ctx.reply(repliedTo.from.id)
 
-			case '/userbalance':
-				return ctx.reply(`The user has ${await balanceOf(repliedTo.from.id)} ${tokenName} tokens in his wallet`)
+		if (msg.includes('/userinvested'))
+			// returns the amount of tokens the user invested
+			return ctx.reply(`The user has ${await howMuchInvested(repliedTo.from.id)} ${tokenName} tokens in his wallet`)
 
-			case '/stats':
-				// get the user statistics
-				let users = `'valid', 'sanya', 'peti', 'jani',`, values = `10, 50, 12, 24,`
-				let ring0 = 2, ring1 = 5, ring2 = 14, ring3 = 25
+		if (msg.includes('/stats')) {
+			// get the user statistics
+			let users = `'valid', 'sanya', 'peti', 'jani',`, values = `10, 50, 12, 24,`
+			let ring0 = 2, ring1 = 5, ring2 = 14, ring3 = 25
 
-				for (const account of await db.get('accounts')) {
-					const userId = account.id
+			for (const account of await db.get('accounts')) {
+				const userId = account.id
 
-					// get the member object using the user's id
-					const member = (await tg.getChatMember(GRP_ID, userId)).user
+				// get the member object using the user's id
+				const member = (await tg.getChatMember(GRP_ID, userId)).user
 
-					const ring = await getUserRing(userId)
+				const ring = await getUserRing(userId)
 
-					if (ring === 3)
-						ring3++
-					else if (ring === 2)
-						ring2++
-					else if (ring === 1)
-						ring1++
-					else
-						ring0++
+				if (ring === 3)
+					ring3++
+				else if (ring === 2)
+					ring2++
+				else if (ring === 1)
+					ring1++
+				else
+					ring0++
 
-					users += `'${member.username}',`
-					values += `${await balanceOf(member.id)},`
-				}
+				users += `'${member.username}',`
+				values += `${await howMuchInvested(member.id)},`
+			}
 
-				// send a cool doughnut chart
-				await tg.sendPhoto(
-					ctx.chat.id,
-					encodeURI(`https://quickchart.io/chart?bkg=white&c={ type: 'doughnut', data: { datasets: [ { data: [${ring0}, ${ring1}, ${ring2}, ${ring3}], backgroundColor: ['rgb(242, 104, 107)','rgb(106, 212, 116)','rgb(91, 165, 212)','rgb(217, 190, 69)'], label: 'Dispersion of the ${groupName} premium members', }, ], labels: ['Admin', 'Diamond', 'Advanced', 'Premium'], }, options: { plugins: { datalabels: { color: 'white' }}, title: { display: true, text: '${groupName} members', }, },}`),
-					{ caption: `Here is a cool doughnut chart which shows the dispersion of premium users in the group '${groupName}'` }
-				)
+			// send a cool doughnut chart
+			await tg.sendPhoto(
+				ctx.chat.id,
+				encodeURI(`https://quickchart.io/chart?bkg=white&c={ type: 'doughnut', data: { datasets: [ { data: [${ring0}, ${ring1}, ${ring2}, ${ring3}], backgroundColor: ['rgb(242, 104, 107)','rgb(106, 212, 116)','rgb(91, 165, 212)','rgb(217, 190, 69)'], label: 'Dispersion of the ${groupName} premium members', }, ], labels: ['Admin', 'Diamond', 'Advanced', 'Premium'], }, options: { plugins: { datalabels: { color: 'white' }}, title: { display: true, text: '${groupName} members', }, },}`),
+				{ caption: `Here is a cool doughnut chart which shows the dispersion of premium users in the group '${groupName}'` }
+			)
 
-				// send a cool bar chart
-				return await tg.sendPhoto(
-					ctx.chat.id,
-					encodeURI(`https://quickchart.io/chart?bkg=white&c={type:'bar', data: { labels: [${users}], datasets: [{ label: '${tokenName}', data: [${values}], backgroundColor: getGradientFillHelper('horizontal', ['rgb(91, 165, 212)', 'rgb(106, 212, 116)']), }] }}`),
-					{ caption: `Here is another cool graph representing the amount of ${tokenName} in each member's wallet` }
-				)
-
-			case '/json':
-				// get the message as a stringified JSON object
-				return ctx.reply(JSON.stringify(repliedTo, null, 2))
+			// send a cool bar chart
+			return await tg.sendPhoto(
+				ctx.chat.id,
+				encodeURI(`https://quickchart.io/chart?bkg=white&c={type:'bar', data: { labels: [${users}], datasets: [{ label: '${tokenName}', data: [${values}], backgroundColor: getGradientFillHelper('horizontal', ['rgb(91, 165, 212)', 'rgb(106, 212, 116)']), }] }}`),
+				{ caption: `Here is another cool graph representing the amount of ${tokenName} in each member's wallet` }
+			)
 		}
+		
+		if (msg.includes('/json'))
+			// get the message as a stringified JSON object
+			return ctx.reply(JSON.stringify(repliedTo, null, 2))
 
 		if (msg.includes('/broadcast '))
 			// admins can use the bot to broadcast messages
@@ -331,26 +331,19 @@ bot.on('text', async (ctx) => {
 		if (msg.includes('/kick'))
 			// admins can also use the bot to kick chat members
 			return kickUser(repliedTo.from.id, msg.split('/kick ')[1])
-	} else {
-		switch (msg) {
-			case '/help':
-				// help function for basic users
-				return ctx.replyWithMarkdown(help)
-		}
-	}
+	} else if (msg.includes('/help'))
+		// help function for basic users
+		return ctx.replyWithMarkdown(help)
 
-	switch (msg) {
-		case '/balance': // reply with the balance of the user who asks for it
-			return ctx.reply(`Hi ${firstName}, you have ${await balanceOf(userId)} yCAKE tokens in your wallet`)
+	// tags all the admins
+	if (msg.includes('@admin')) {
+		let admins = ''
 
-		case '@admin': // tags all the admins
-			let admins = ''
+		for (const admin of await tg.getChatAdministrators(GRP_ID))
+			if (admin.user.id !== (await tg.getMe()).id)
+				admins += `@${admin.user.username} `
 
-			for (const admin of await tg.getChatAdministrators(GRP_ID))
-				if (admin.user.id !== (await tg.getMe()).id)
-					admins += `@${admin.user.username} `
-
-			return ctx.reply(admins)
+		return ctx.reply(admins)
 	}
 })
 
@@ -369,7 +362,7 @@ initContract().then(async () => {
 			console.log(`User ${userId}'s address is ${account.address}`)
 
 			// and kick the user if they do not have enough yCAKE tokens
-			if (!await isAdmin(userId) && !await userHasEnoughTokens(userId))
+			if (!await isAdmin(userId) && !await userHasInvestedEnoughTokens(userId))
 				await kickUser(userId, 'they didn\'t have enough tokens 😢')
 		}
 	}
@@ -386,7 +379,7 @@ initContract().then(async () => {
 
 module.exports.notifyBot = async function notifyBot(userId) {
 	// TODO: something is really buggy
-	if (await userHasEnoughTokens(userId))
+	if (await userHasInvestedEnoughTokens(userId))
 		await joinCheckSuccess(userId)
 	else
 		await joinCheckFailure(userId)
