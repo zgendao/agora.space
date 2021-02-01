@@ -1,5 +1,5 @@
 const { TOKEN, GRP_ID } = require('./.secret.js')
-const { Telegraf, Markup } = require('telegraf')
+const { Telegraf, Markup } = require('telegraf') // TODO: add buttons with Markup
 const Extra = require('telegraf/extra')
 const Web3 = require('web3')
 const low = require('lowdb')
@@ -33,6 +33,19 @@ const db = low(adapter)
 // setting some defaults (required if your JSON file is empty)
 // stores the "ring" (access level) of a user
 db.defaults({ rings: [] }).write()
+
+// TODO: database for groups
+// - group id
+// - token contract address
+
+// TODO: added to a group
+// - if bot is added to a group, it has to ask for contract address
+// - only an admin can update the contract address
+
+// TODO: on new user
+// - every user has to select a group from a list in the private cat with the bot
+// - if the user is visiting the bot from the website of a community, this step is skipped
+// - the user is added to a group if they has invested enough tokens
 
 /**
  * Simple helper function to make API requests
@@ -277,12 +290,12 @@ bot.on('text', async (ctx) => {
 
 		if (msg.includes('/userinvested'))
 			// returns the amount of tokens the user invested
-			return ctx.reply(`The user has ${await howMuchInvested(repliedTo.from.id)} ${tokenName} tokens in his wallet`)
+			return ctx.reply(`${repliedTo.from.first_name} has ${await howMuchInvested(repliedTo.from.id)} ${tokenName} tokens in their wallet`)
 
 		if (msg.includes('/stats')) {
 			// get the user statistics
-			let users = `'valid', 'sanya', 'peti', 'jani',`, values = `10, 50, 12, 24,`
-			let ring0 = 2, ring1 = 5, ring2 = 14, ring3 = 25
+			let users = '', values = ''
+			let ring0 = 0, ring1 = 0, ring2 = 0, ring3 = 0
 
 			for (const account of await db.get('accounts')) {
 				const userId = account.id
