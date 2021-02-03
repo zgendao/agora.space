@@ -34,18 +34,9 @@ const db = low(adapter)
 // stores the "ring" (access level) of a user
 db.defaults({ rings: [] }).write()
 
-// TODO: database for groups
-// - group id
-// - token contract address
-
-// TODO: added to a group
-// - if bot is added to a group, it has to ask for contract address
-// - only an admin can update the contract address
-
-// TODO: on new user
-// - every user has to select a group from a list in the private cat with the bot
-// - if the user is visiting the bot from the website of a community, this step is skipped
-// - the user is added to a group if they has invested enough tokens
+// stores group info
+// group id, token contract address, token name
+db.defaults({ groups: [] }).write()
 
 /**
  * Simple helper function to make API requests
@@ -166,6 +157,13 @@ async function userHasInvestedEnoughTokens(userId) {
 // a simple function which greets every user
 // when they start a conversation with the bot
 async function joinWelcome(ctx) {
+	// TODO: on new user
+	// - every user has to select a group from a list in the private cat with the bot
+	// - if the user is visiting the bot from the website of a community, this step is skipped
+	// - the user is added to a group if they has invested enough tokens
+
+	// lets add a markup button list below the message block
+	// also rewrite the message box so it will make sense in the new context
 	for (const message of [
 		`Hello ${ctx.message.from.first_name} 👋`,
 		`My name is ${ctx.botInfo.first_name}`,
@@ -225,12 +223,21 @@ bot.start(async (ctx) => {
 bot.on('new_chat_members', async (ctx) => {
 	const member = ctx.message.new_chat_member
 
-	if (await getUserAddress(member.id) === undefined)
-		await kickUser(member.id) // kick the user if joined accidentally
-	else
+	if (member.id !== (await tg.getMe()).id) {
+		if (await getUserAddress(member.id) === undefined)
+			await kickUser(member.id) // kick the user if joined accidentally
+		else
+			await ctx.reply(
+				`Hi, ${member.first_name}! 😄 Welcome to the ${(await tg.getChat(GRP_ID)).title}! 🎉`
+			)
+	} else {
+		await ctx.reply("Hello guys, good to see you!")
 		await ctx.reply(
-			`Hi, ${member.first_name}! 😄 Welcome to the ${(await tg.getChat(GRP_ID)).title}! 🎉`
+			"Please reply on this message with the contract address of your token in the following form:\n" +
+			"0xa1b2c3d4efghijklmnopqrstuvwxyz1234567890"
 		)
+		// TODO: listen for this action, then get the name of the token
+	}
 })
 
 // listening on members leaving the group
