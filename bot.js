@@ -1,5 +1,5 @@
 const { TOKEN, GRP_ID } = require('./.secret.js')
-const { Telegraf, Markup } = require('telegraf') // TODO: add buttons with Markup
+const { Telegraf, Markup } = require('telegraf')
 const Extra = require('telegraf/extra')
 const Web3 = require('web3')
 const low = require('lowdb')
@@ -157,21 +157,27 @@ async function userHasInvestedEnoughTokens(userId) {
 // a simple function which greets every user
 // when they start a conversation with the bot
 async function joinWelcome(ctx) {
-	// TODO: on new user
-	// - every user has to select a group from a list in the private cat with the bot
-	// - if the user is visiting the bot from the website of a community, this step is skipped
-	// - the user is added to a group if they has invested enough tokens
-
-	// lets add a markup button list below the message block
-	// also rewrite the message box so it will make sense in the new context
 	for (const message of [
 		`Hello ${ctx.message.from.first_name} 👋`,
 		`My name is ${ctx.botInfo.first_name}`,
 		'Wanna be a part of something really exciting?',
 		'Of course you want 😎',
-		'Visit the following link and log in with your Telegram and MetaMask account to join:\nagora.space'
 	])
 		await ctx.reply(message)
+
+	tg.ur
+
+	const keyboard = Markup.inlineKeyboard([
+		[tg.InlineKeyboardButton(text='Agora 😍', domain='agora.space', login_url='https://agora.space', request_write_access=true)],
+		[Markup.urlButton('Test1 📘', 'https://agora.space')],
+		[Markup.urlButton('Test2 🐧', 'https://agora.space')],
+		[Markup.urlButton('Test3 🎓', 'https://agora.space')],
+		[Markup.urlButton('Test4 🏎', 'https://agora.space')],
+		[Markup.urlButton('Test5 🖥', 'https://agora.space')],
+		[Markup.callbackButton("Not now", "nope")]
+	])
+
+	await ctx.replyWithMarkdown('Choose one of the following communities:', markdown.markup(keyboard))
 }
 
 // a function to let the user know whether they succeeded
