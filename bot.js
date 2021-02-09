@@ -165,10 +165,8 @@ async function joinWelcome(ctx) {
 	])
 		await ctx.reply(message)
 
-	tg.ur
-
 	const keyboard = Markup.inlineKeyboard([
-		[tg.InlineKeyboardButton(text='Agora 😍', domain='agora.space', login_url='https://agora.space', request_write_access=true)],
+		[Markup.urlButton('Agora 😍', 'https://agora.space')],
 		[Markup.urlButton('Test1 📘', 'https://agora.space')],
 		[Markup.urlButton('Test2 🐧', 'https://agora.space')],
 		[Markup.urlButton('Test3 🎓', 'https://agora.space')],
@@ -182,8 +180,12 @@ async function joinWelcome(ctx) {
 
 // a function to let the user know whether they succeeded
 async function joinCheckSuccess(userId) {
+	// TODO: we need to export the chat link after we added the bot to the group
+	// and we gave her the needed administrator rights in the group
+	// REF: https://github.com/irazasyed/telegram-bot-sdk/issues/487
+
 	// generate and send an invite link
-	await tg.sendMessage(userId,`Congratulations!🎉 Now you can join our super secret group:\n${await tg.exportChatInviteLink(GRP_ID)}`)
+	await tg.sendMessage(userId,`Congratulations!🎉 Now you can join our super secret group:\n${(await tg.getChat()).invite_link}`)
 
 	// clapping pepe sticker
 	await tg.sendSticker(userId,'CAACAgQAAxkBAAEEjKhf-I1-Vrd1hImudFl7kkTnDXAhgAACTAEAAqghIQZjKrRWscYWyB4E')
@@ -378,25 +380,40 @@ bot.catch((err, ctx) => console.log(`Ooops, encountered an error for ${ctx.updat
 
 initContract().then(async () => {
 	// start the bot
-	bot.launch()
+	await bot.launch()
 
-	async function cb() {
+	contract.events.Deposit(function(error, event) {
+		if (error)
+			throw error
+	})
+	.on('data', event => {
+		console.log(event)
+	})
+	.on('error', error => {
+		console.error(error)
+	})
+
+	contract.events.Withdraw(function(error, event) {})
+	.on('data', event => {
+		console.log(event)
+
+		/*
 		// loop through all the accounts in the database
 		for (const account of await db.get('accounts')) {
-			const userId = account.id
-
-			console.log(`User ${userId}'s address is ${account.address}`)
-
-			// and kick the user if they do not have enough yCAKE tokens
-			if (!await isAdmin(userId) && !await userHasInvestedEnoughTokens(userId))
-				await kickUser(userId, 'they didn\'t have enough tokens 😢')
+			if (account.address == address)
+			{
+				const userId = account.id
+		
+				// and kick the user if they do not have enough yCAKE tokens
+				if (!await isAdmin(userId) && !await userHasInvestedEnoughTokens(userId))
+					await kickUser(userId, 'they didn\'t have enough tokens 😢')
+			}
 		}
-	}
-
-	await cb()
-
-	// repeat this action every half an hour
-	await setInterval(await cb, 30 * 60 * 1000)
+		*/
+	})
+	.on('error', error => {
+		console.error(error)
+	})
 
 	// enable graceful stop
 	process.once('SIGINT', () => bot.stop('SIGINT'))
