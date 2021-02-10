@@ -34,7 +34,9 @@ class TokenApprove extends React.Component  {
 
   /** Calls both approve functions one after the other. */
   approveBoth = async () => {
-    this.approveYCake().then(this.approveAgt());
+    this.approveYCake();
+    await new Promise(resolve => setTimeout(resolve, 690)); // Workaround for a Metamask bug
+    this.approveAgt();
   }
 
   render() {
