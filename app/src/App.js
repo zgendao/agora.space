@@ -21,6 +21,10 @@ class App extends React.Component {
     this.maxValue = 115792089237316195423570985008687907853269984665640564039457584007913129639935n;
   }
 
+  getStakedAmount = (amount) => {
+    this.setState({stakedAmount: amount});
+  }
+
   /** Gets the connected address's allowance of the staked token. */
   getYCakeAllowance = async () => {
     return await this.yCakeContract.methods.allowance(this.state.account, this.agoraSpaceAddress).call();
@@ -121,18 +125,23 @@ class App extends React.Component {
             The more you stake, the more VIP group you can join.
           </p>
         </header>
-        {this.state.approvalNeeded !== undefined && <this.approveOrStake/>}
-        <Telegram
-          account={this.state.account}
-          agoraTokenContract={this.agoraTokenContract}
-          web3={this.state.web3}
-        />
+        {this.state.approvalNeeded !== undefined &&
+          <this.approveOrStake/>
+        }
+        {this.state.stakedAmount >= 10 && 
+          <Telegram
+            account={this.state.account}
+            agoraTokenContract={this.agoraTokenContract}
+            web3={this.state.web3}
+          />
+        }
         <StakeInfo
           key={this.state.infoKey}
           account={this.state.account}
           agoraTokenContract={this.agoraTokenContract}
           agoraSpaceContract={this.agoraSpaceContract}
           web3={this.state.web3}
+          stakedAmount={this.getStakedAmount}
         />
       </div>
     )

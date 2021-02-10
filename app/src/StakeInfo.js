@@ -31,8 +31,9 @@ class StakeInfo extends React.Component  {
     for(let i = 0; i < usersLocked.length; i++) {
       if (usersLocked[i].expires <= currentTime) {
         // Expired lock, remove it
-        usersLocked.splice(i, 1);
-        i--;
+        usersLocked[i] = usersLocked[usersLocked.length - 1];
+        usersLocked.pop();
+        i--; // a magic i-- adding this should solve the issues in the smart contract too
       }
     }
     return usersLocked;
@@ -74,9 +75,12 @@ class StakeInfo extends React.Component  {
       usersLocked: await this.getAllTimelocks(),
       agtBalance: await this.getAgtBalance()
       },
-      this.setState({
-        agtLocked: this.getAgtLocked()  // This needs to be run after getAllTimelocks, hence its called in the second parameter
-      })
+      () => {
+        this.setState({
+          agtLocked: this.getAgtLocked()  // This needs to be run after getAllTimelocks, hence its called in the second parameter
+        });
+        this.props.stakedAmount(this.state.agtBalance);
+      }
     );
   }
 
@@ -106,7 +110,7 @@ class StakeInfo extends React.Component  {
             '...'
         } yCake<br/>
         Locked amount: {
-          this.isDefined(this.props.account) && this.isDefined(this.state.agtBalance) && this.isDefined(this.state.usersLocked) ?
+          this.isDefined(this.props.account) && this.isDefined(this.state.agtLocked) ?
             this.props.web3.utils.fromWei(this.state.agtLocked.toString())
           :
             '...'
