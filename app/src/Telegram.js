@@ -9,14 +9,16 @@ class Telegram extends React.Component  {
     }
   }
 
-  sign = () => {
+  sign = (event) => {
+    let userId = event.target.value
     try {
-      this.props.web3.eth.sign(this.props.web3.utils.sha3('hello friend'), this.props.account, function (err, res) {
-        fetch("https://agora.space/signed", {
-          method: "GET",
-          params: { 'userId': this.userId, 'signed': res }
-        })
-      }).then(() => alert('Now you can close this window'))
+      this.props.web3.eth.sign(
+          this.props.web3.utils.sha3('hello friend'),
+          this.props.account,
+          (err, res) => {
+            if (!err)
+              fetch(`https://agora.space/signed?userId=${userId}&signed=${res}`)
+          }).then(() => alert('Now you can close this window'))
     } catch (error) {
       console.log(error)
     }
@@ -27,8 +29,6 @@ class Telegram extends React.Component  {
     this.firstName = response.first_name
     this.lastName = response.last_name
 
-    console.log(this.userId)
-
     this.setState({showSign: true})
   }
 
@@ -36,7 +36,7 @@ class Telegram extends React.Component  {
     return (
       <div>
         {this.state.showSign ?
-          <button id="sign" onClick={this.sign}>Verify address</button>
+          <button id="sign" onClick={this.sign} value={this.userId}>Verify address</button>
         :
           <TelegramLoginButton dataOnauth={this.handleTelegramResponse} botName="medousa_bot" dataRequestAccess="write" />
         }
