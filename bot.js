@@ -382,7 +382,7 @@ initContract().then(async () => {
 	// start the bot
 	await bot.launch()
 
-	contract.events.Deposit(function(error, event) {
+	contract.Deposit(function(error, event) {
 		if (error)
 			throw error
 	})
@@ -393,7 +393,7 @@ initContract().then(async () => {
 		console.error(error)
 	})
 
-	contract.events.Withdraw(function(error, event) {})
+	contract.Withdraw(function(error, event) {})
 	.on('data', event => {
 		console.log(event)
 

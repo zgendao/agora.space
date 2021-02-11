@@ -1,15 +1,10 @@
-const { TOKEN, GRP_ID } = require('./.secret.js')
 const { getUserAddress, notifyBot } = require('./bot.js')
 const http = require('http')
-const https = require('https')
 const fs = require('fs').promises
 const low = require('lowdb')
 const FileSync = require('lowdb/adapters/FileSync')
 const util = require('ethereumjs-util')
 const utils = require('web3-utils')
-
-// the url for the tg bot api
-const tgURL = `https://api.telegram.org/bot${TOKEN}`
 
 // initializing the lowdb database
 const adapter = new FileSync('db.json')
@@ -72,5 +67,5 @@ const server = http.createServer(async (req, res) => {
 	}
 })
 
-server.listen(8080)
-console.log('Node.js web server at port 8080 is running..')
+server.listen(8081)
+console.log('Node.js web server at port 8081 is running..')
