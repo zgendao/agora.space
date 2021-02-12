@@ -1,6 +1,5 @@
 const { getUserAddress, notifyBot } = require('./bot.js')
 const http = require('http')
-const fs = require('fs').promises
 const low = require('lowdb')
 const FileSync = require('lowdb/adapters/FileSync')
 const util = require('ethereumjs-util')
@@ -33,14 +32,7 @@ async function addUser(userId, address) {
 }
 
 const server = http.createServer(async (req, res) => {
-	if (req.url === '/') {
-		fs.readFile(__dirname + "/website/index.html")
-		.then(contents => {
-			res.setHeader("Content-Type", "text/html")
-			res.writeHead(200)
-			res.end(contents)
-		})
-	} else if (req.url.includes('/signed')) {
+	if (req.url.includes('/signed')) {
 		const query = require('url').parse(req.url, true).query
 
 		const sig = util.fromRpcSig(query.signed)
@@ -60,12 +52,9 @@ const server = http.createServer(async (req, res) => {
 		res.writeHead(200, { 'Content-Type': 'text/plain' })
 		res.write('success')
 		res.end()
-	} else {
-		res.writeHead(404, { 'Content-Type': 'text/html' })
-		res.write(`<html><body><p>${req.url} not found!</p></body></html>`)
-		res.end()
 	}
 })
 
+console.log('Starting server...')
 server.listen(8081)
-console.log('Node.js web server at port 8081 is running..')
+console.log('Node.js web server at port 8081 is up and running...')

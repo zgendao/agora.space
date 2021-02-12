@@ -6,8 +6,8 @@ const low = require('lowdb')
 const FileSync = require('lowdb/adapters/FileSync')
 const request = require('request')
 
-const BSC_MAINNET = 'https://bsc-dataseed1.binance.org:443'
-const BSC_TESTNET = 'https://data-seed-prebsc-1-s1.binance.org:8545'
+const BSC_MAINNET = 'wss://bsc-dataseed1.binance.org:443'
+const BSC_TESTNET = 'wss://data-seed-prebsc-1-s1.binance.org:8545'
 
 // bscscan API
 const BSCSCAN_API = 'https://api.bscscan.com/api'
@@ -17,6 +17,9 @@ const CONTRACT_ADDRESS = '0x6B52d9A95de791986e2781Bd461991F182AD801b'
 const TOKEN_ADDRESS = '0xB32e35AfFc06FB8928537a64dc8BdE18d4d720b9'
 const GROUP_NAME = 'yCAKE Gang'
 const TOKEN_NAME = 'yCAKE'
+
+// web3 instance
+let web3
 
 // the yCAKE token contract
 let contract
@@ -61,8 +64,20 @@ function doRequest(url) {
 
 // simple helper to wrap the initialization of web3 and the token contract
 async function initContract() {
+	console.log('Initializing contracts...')
+
+	const options = {
+		// Enable auto reconnection
+		reconnect: {
+			auto: true,
+			delay: 1000, // ms
+			maxAttempts: 100000000,
+			onTimeout: true
+		}
+	};
+
 	// initializing web3 with the address of the BSC mainnet
-	const web3 = new Web3(new Web3.providers.HttpProvider(BSC_TESTNET))
+	web3 = new Web3(new Web3.providers.WebsocketProvider('wss://mainnet.infura.io/ws', options))
 
 	// getting contract abis
 	const contractAbi = await doRequest(`${BSCSCAN_API}?module=contract&action=getabi&address=${CONTRACT_ADDRESS}`)
@@ -386,39 +401,50 @@ bot.on('text', async (ctx) => {
 bot.catch((err, ctx) => console.log(`Ooops, encountered an error for ${ctx.updateType}`, err))
 
 initContract().then(async () => {
+	console.log('Starting the bot...')
 	// start the bot
 	await bot.launch()
 
-	contract.events.Deposit(function(error, event) {
-	})
+	console.log('Setting up listeners...')
+
+	/*
+	contract.events.Deposit({ fromBlock: 'latest' }, console.log)
 	.on('data', event => {
 		console.log(event)
 	})
-	.on('error', error => console.error(error))
+	.on('error', console.error)
 
-	contract.events.Withdraw(function(error, event) {})
+	contract.events.Withdraw({ fromBlock: 'latest' }, console.log)
 	.on('data', event => {
 		console.log(event)
 
-		/*
 		// loop through all the accounts in the database
 		for (const account of await db.get('accounts')) {
-			if (account.address == address)
+			if (account.address == event.address)
 			{
 				const userId = account.id
 		
 				// and kick the user if they do not have enough yCAKE tokens
-				if (!await isAdmin(userId) && !await userHasInvestedEnoughTokens(userId))
+				if (!await userHasInvestedEnoughTokens(userId))
 					await kickUser(userId, 'they didn\'t have enough tokens 😢')
 			}
-		}*/
+		}
 		
 	})
-	.on('error', error => console.error(error))
+	.on('error', console.error)
+*/
+	console.log(`Starting event listeners...`)
+	contract.events.allEvents()
+	.on('data', async function(event) {
+		console.log(event);
+	})
+	.on('error', console.error)
 
 	// enable graceful stop
 	process.once('SIGINT', () => bot.stop('SIGINT'))
 	process.once('SIGTERM', () => bot.stop('SIGTERM'))
+
+	console.log('Medousa is alive...')
 })
 
 module.exports.notifyBot = async function notifyBot(userId) {
