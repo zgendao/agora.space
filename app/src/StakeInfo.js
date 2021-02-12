@@ -49,12 +49,13 @@ class StakeInfo extends React.Component  {
 
   /**
    * Gets the connected address's total amount of locked tokens.
-   * @returns the amount of locked Agora Tokens the user has in wei.
+   * @returns the amount of locked Agora Tokens the user has. Not in wei. In whole tokens.
    */
   getAgtLocked = () => {
     let sum = 0;
-    for (let elem in this.state.usersLocked)
-      sum += Number(elem);
+    for (let elem of this.state.usersLocked) {
+      sum += Number(this.props.web3.utils.fromWei(elem.amount));
+    }
     return sum;
   }
 
@@ -66,9 +67,7 @@ class StakeInfo extends React.Component  {
     return variable !== undefined;
   }
 
-  /**
-   * Gets the basic data to be listed on UI and sets them into the state.
-   */
+  /** Gets the basic data to be listed on UI and sets them into the state. */
   getTokenData = async () => {
     this.setState({
       timelock: await this.getTimelockDuration(),
@@ -99,19 +98,19 @@ class StakeInfo extends React.Component  {
       <div>
         Total staked tokens: {
           this.isDefined(this.props.account) && this.isDefined(this.state.agtBalance) ?
-            this.props.web3.utils.fromWei(this.state.agtBalance.toString())
+            this.props.web3.utils.fromWei(this.state.agtBalance)
           :
             '...'
         } yCake<br/>
         Available for withdrawal: {
           this.isDefined(this.props.account) && this.isDefined(this.state.agtLocked) ?
-            (this.state.agtBalance - this.state.agtLocked) / 10**18
+            (Number(this.props.web3.utils.fromWei(this.state.agtBalance)) - this.state.agtLocked)
           :
             '...'
         } yCake<br/>
         Locked amount: {
           this.isDefined(this.props.account) && this.isDefined(this.state.agtLocked) ?
-            this.props.web3.utils.fromWei(this.state.agtLocked.toString())
+            this.state.agtLocked
           :
             '...'
         } yCake<br/>
@@ -125,7 +124,7 @@ class StakeInfo extends React.Component  {
           this.isDefined(this.state.usersLocked) ?
             this.state.usersLocked.map(lock =>
               <div key={lock.expires}>
-                Amount: {this.props.web3.utils.fromWei(lock.amount.toString())} AGT | Expiry: {new Date(lock.expires * 1000).toString()}
+                Amount: {this.props.web3.utils.fromWei(lock.amount)} AGT | Expiry: {new Date(lock.expires * 1000).toString()}
               </div>
             )
           :

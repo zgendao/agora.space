@@ -54,7 +54,7 @@ class App extends React.Component {
         await this.checkAllowances();
         // Update key to force out an update of the component
         this.setState({ infoKey: Math.random() });
-      })  // TODO: Allow joining to Telegram
+      })
       .catch(err => alert(err.message));
   }
 
@@ -128,7 +128,7 @@ class App extends React.Component {
         {this.state.approvalNeeded !== undefined &&
           <this.approveOrStake/>
         }
-        {this.state.stakedAmount >= 10 && 
+        {this.state.stakedAmount >= 100000000000000000n &&
           <Telegram
             account={this.state.account}
             agoraTokenContract={this.agoraTokenContract}

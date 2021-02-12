@@ -9,6 +9,10 @@ class Telegram extends React.Component  {
     }
   }
 
+  /** 
+   * Initiates a request to web3 to sign a string and handles the result.
+   * @param event The button click event. It's value should have the userId.
+   */
   sign = (event) => {
     let userId = event.target.value
     try {
@@ -24,6 +28,7 @@ class Telegram extends React.Component  {
     }
   }
 
+  /** Stores the user's data after loggin in via Telegram. Alters state to show the sign button. */
   handleTelegramResponse = response => {
     this.userId = response.id
     this.firstName = response.first_name
