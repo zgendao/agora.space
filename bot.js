@@ -6,16 +6,21 @@ const low = require('lowdb')
 const FileSync = require('lowdb/adapters/FileSync')
 const request = require('request')
 
-// bscscan API
-const bscscanapi = 'https://api.bscscan.com/api'
+const BSC_MAINNET = 'https://bsc-dataseed1.binance.org:443'
+const BSC_TESTNET = 'https://data-seed-prebsc-1-s1.binance.org:8545'
 
-// address for the yCAKE Agora Token contract
-const contract_address = '0xB32e35AfFc06FB8928537a64dc8BdE18d4d720b9'
-const groupName = 'yCAKE Gang'
-const tokenName = 'yCAKE'
+// bscscan API
+const BSCSCAN_API = 'https://api.bscscan.com/api'
+
+// address for the Agora yCAKE Space contract
+const CONTRACT_ADDRESS = '0x6B52d9A95de791986e2781Bd461991F182AD801b'
+const TOKEN_ADDRESS = '0xB32e35AfFc06FB8928537a64dc8BdE18d4d720b9'
+const GROUP_NAME = 'yCAKE Gang'
+const TOKEN_NAME = 'yCAKE'
 
 // the yCAKE token contract
 let contract
+let tokenContract
 
 // this helps us use markdown in our messages
 const markdown = Extra.markdown()
@@ -57,13 +62,15 @@ function doRequest(url) {
 // simple helper to wrap the initialization of web3 and the token contract
 async function initContract() {
 	// initializing web3 with the address of the BSC mainnet
-	const web3 = new Web3(new Web3.providers.HttpProvider('https://bsc-dataseed1.binance.org:443'))
+	const web3 = new Web3(new Web3.providers.HttpProvider(BSC_TESTNET))
 
-	// getting contract abi
-	const abi = await doRequest(`${bscscanapi}?module=contract&action=getabi&address=${contract_address}`)
+	// getting contract abis
+	const contractAbi = await doRequest(`${BSCSCAN_API}?module=contract&action=getabi&address=${CONTRACT_ADDRESS}`)
+	const tokenAbi = await doRequest(`${BSCSCAN_API}?module=contract&action=getabi&address=${TOKEN_ADDRESS}`)
 
-	// initializing the yCAKE contract
-	contract = new web3.eth.Contract(abi, contract_address)
+	// initializing the Agora yCAKE Space and Agora Token contracts
+	contract = new web3.eth.Contract(contractAbi, CONTRACT_ADDRESS)
+	tokenContract = new web3.eth.Contract(tokenAbi, TOKEN_ADDRESS)
 }
 
 /**
@@ -111,7 +118,7 @@ async function isAdmin(userId) {
  * @returns the balance of a user
  */
 async function howMuchInvested(userId) {
-	return await contract.methods.balanceOf(await getUserAddress(userId)).call() / 10 ** 18
+	return await tokenContract.methods.balanceOf(await getUserAddress(userId)).call() / 10 ** 18
 }
 
 async function userHasInvestedEnoughTokens(userId) {
@@ -305,7 +312,7 @@ bot.on('text', async (ctx) => {
 
 		if (msg.includes('/userinvested'))
 			// returns the amount of tokens the user invested
-			return ctx.reply(`${repliedTo.from.first_name} has ${await howMuchInvested(repliedTo.from.id)} ${tokenName} tokens in their wallet`)
+			return ctx.reply(`${repliedTo.from.first_name} has ${await howMuchInvested(repliedTo.from.id)} ${TOKEN_NAME} tokens in their wallet`)
 
 		if (msg.includes('/stats')) {
 			// get the user statistics
@@ -336,15 +343,15 @@ bot.on('text', async (ctx) => {
 			// send a cool doughnut chart
 			await tg.sendPhoto(
 				ctx.chat.id,
-				encodeURI(`https://quickchart.io/chart?bkg=white&c={ type: 'doughnut', data: { datasets: [ { data: [${ring0}, ${ring1}, ${ring2}, ${ring3}], backgroundColor: ['rgb(242, 104, 107)','rgb(106, 212, 116)','rgb(91, 165, 212)','rgb(217, 190, 69)'], label: 'Dispersion of the ${groupName} premium members', }, ], labels: ['Admin', 'Diamond', 'Advanced', 'Premium'], }, options: { plugins: { datalabels: { color: 'white' }}, title: { display: true, text: '${groupName} members', }, },}`),
-				{ caption: `Here is a cool doughnut chart which shows the dispersion of premium users in the group '${groupName}'` }
+				encodeURI(`https://quickchart.io/chart?bkg=white&c={ type: 'doughnut', data: { datasets: [ { data: [${ring0}, ${ring1}, ${ring2}, ${ring3}], backgroundColor: ['rgb(242, 104, 107)','rgb(106, 212, 116)','rgb(91, 165, 212)','rgb(217, 190, 69)'], label: 'Dispersion of the ${GROUP_NAME} premium members', }, ], labels: ['Admin', 'Diamond', 'Advanced', 'Premium'], }, options: { plugins: { datalabels: { color: 'white' }}, title: { display: true, text: '${GROUP_NAME} members', }, },}`),
+				{ caption: `Here is a cool doughnut chart which shows the dispersion of premium users in the group '${GROUP_NAME}'` }
 			)
 
 			// send a cool bar chart
 			return await tg.sendPhoto(
 				ctx.chat.id,
-				encodeURI(`https://quickchart.io/chart?bkg=white&c={type:'bar', data: { labels: [${users}], datasets: [{ label: '${tokenName}', data: [${values}], backgroundColor: getGradientFillHelper('horizontal', ['rgb(91, 165, 212)', 'rgb(106, 212, 116)']), }] }}`),
-				{ caption: `Here is another cool graph representing the amount of ${tokenName} in each member's wallet` }
+				encodeURI(`https://quickchart.io/chart?bkg=white&c={type:'bar', data: { labels: [${users}], datasets: [{ label: '${TOKEN_NAME}', data: [${values}], backgroundColor: getGradientFillHelper('horizontal', ['rgb(91, 165, 212)', 'rgb(106, 212, 116)']), }] }}`),
+				{ caption: `Here is another cool graph representing the amount of ${TOKEN_NAME} in each member's wallet` }
 			)
 		}
 		
@@ -382,18 +389,14 @@ initContract().then(async () => {
 	// start the bot
 	await bot.launch()
 
-	contract.Deposit(function(error, event) {
-		if (error)
-			throw error
+	contract.events.Deposit(function(error, event) {
 	})
 	.on('data', event => {
 		console.log(event)
 	})
-	.on('error', error => {
-		console.error(error)
-	})
+	.on('error', error => console.error(error))
 
-	contract.Withdraw(function(error, event) {})
+	contract.events.Withdraw(function(error, event) {})
 	.on('data', event => {
 		console.log(event)
 
@@ -408,12 +411,10 @@ initContract().then(async () => {
 				if (!await isAdmin(userId) && !await userHasInvestedEnoughTokens(userId))
 					await kickUser(userId, 'they didn\'t have enough tokens 😢')
 			}
-		}
-		*/
+		}*/
+		
 	})
-	.on('error', error => {
-		console.error(error)
-	})
+	.on('error', error => console.error(error))
 
 	// enable graceful stop
 	process.once('SIGINT', () => bot.stop('SIGINT'))
