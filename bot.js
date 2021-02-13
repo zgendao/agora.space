@@ -77,7 +77,7 @@ async function initContract() {
 	};
 
 	// initializing web3 with the address of the BSC mainnet
-	web3 = new Web3(new Web3.providers.WebsocketProvider('wss://mainnet.infura.io/ws', options))
+	web3 = new Web3(new Web3.providers.WebsocketProvider(BSC_TESTNET, options))
 
 	// getting contract abis
 	const contractAbi = await doRequest(`${BSCSCAN_API}?module=contract&action=getabi&address=${CONTRACT_ADDRESS}`)
@@ -133,7 +133,7 @@ async function isAdmin(userId) {
  * @returns the balance of a user
  */
 async function howMuchInvested(userId) {
-	return await tokenContract.methods.balanceOf(await getUserAddress(userId)).call() / 10 ** 18
+	return await tokenContract.methods.balanceOf(await getUserAddress(userId)) / 10 ** 18
 }
 
 async function userHasInvestedEnoughTokens(userId) {
@@ -207,7 +207,7 @@ async function joinCheckSuccess(userId) {
 	// REF: https://github.com/irazasyed/telegram-bot-sdk/issues/487
 
 	// generate and send an invite link
-	await tg.sendMessage(userId,`Congratulations!🎉 Now you can join our super secret group:\n${(await tg.getChat()).invite_link}`)
+	await tg.sendMessage(userId,`Congratulations!🎉 Now you can join our super secret group:\n${(await tg.getChat(GRP_ID)).invite_link}`)
 
 	// clapping pepe sticker
 	await tg.sendSticker(userId,'CAACAgQAAxkBAAEEjKhf-I1-Vrd1hImudFl7kkTnDXAhgAACTAEAAqghIQZjKrRWscYWyB4E')
@@ -439,6 +439,7 @@ initContract().then(async () => {
 		console.log(event);
 	})
 	.on('error', console.error)
+
 
 	// enable graceful stop
 	process.once('SIGINT', () => bot.stop('SIGINT'))
