@@ -6,17 +6,17 @@ const low = require('lowdb')
 const FileSync = require('lowdb/adapters/FileSync')
 const request = require('request')
 
-const BSC_MAINNET = 'wss://bsc-dataseed1.binance.org:443'
-const BSC_TESTNET = 'wss://data-seed-prebsc-1-s1.binance.org:8545'
+const BSC_MAINNET = 'ws://bsc-dataseed1.binance.org:443'
+const BSC_TESTNET = 'wss://data-seed-prebsc-2-s3.binance.org:8545'
 
 // bscscan API
-const BSCSCAN_API = 'https://api.bscscan.com/api'
+const BSCSCAN_MAINNET_API = 'https://api.bscscan.com/api'
+const BSCSCAN_TESTNET_API = 'https://api-testnet.bscscan.com/api'
 
 // address for the Agora yCAKE Space contract
-const CONTRACT_ADDRESS = '0x6B52d9A95de791986e2781Bd461991F182AD801b'
+const CONTRACT_ADDRESS = '0x4eF9e3A96B4d6d8d55c6a1a89BD3493Fc15f9D65'
 const TOKEN_ADDRESS = '0xB32e35AfFc06FB8928537a64dc8BdE18d4d720b9'
 const GROUP_NAME = 'yCAKE Gang'
-const TOKEN_NAME = 'yCAKE'
 
 // web3 instance
 let web3
@@ -71,7 +71,7 @@ async function initContract() {
 		reconnect: {
 			auto: true,
 			delay: 1000, // ms
-			maxAttempts: 100000000,
+			maxAttempts: 1000,
 			onTimeout: true
 		}
 	};
@@ -80,11 +80,12 @@ async function initContract() {
 	web3 = new Web3(new Web3.providers.WebsocketProvider(BSC_TESTNET, options))
 
 	// getting contract abis
-	const contractAbi = await doRequest(`${BSCSCAN_API}?module=contract&action=getabi&address=${CONTRACT_ADDRESS}`)
-	const tokenAbi = await doRequest(`${BSCSCAN_API}?module=contract&action=getabi&address=${TOKEN_ADDRESS}`)
+	//const contractAbi = await doRequest(`${BSCSCAN_MAINNET_API}?module=contract&action=getabi&address=${CONTRACT_ADDRESS}`)
+	spaceAbi = [{"inputs":[{"internalType":"address","name":"_stakeTokenAddress","type":"address"},{"internalType":"address","name":"_returnTokenAddress","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"account","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"Deposit","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"account","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"Withdraw","type":"event"},{"inputs":[{"internalType":"uint256","name":"_amount","type":"uint256"}],"name":"deposit","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"lockInterval","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"renounceOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_minutes","type":"uint256"}],"name":"setLockInterval","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"},{"internalType":"uint256","name":"","type":"uint256"}],"name":"timelocks","outputs":[{"internalType":"uint256","name":"expires","type":"uint256"},{"internalType":"uint256","name":"amount","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_amount","type":"uint256"}],"name":"withdraw","outputs":[],"stateMutability":"nonpayable","type":"function"}]
+	const tokenAbi = await doRequest(`${BSCSCAN_MAINNET_API}?module=contract&action=getabi&address=${TOKEN_ADDRESS}`)
 
 	// initializing the Agora yCAKE Space and Agora Token contracts
-	contract = new web3.eth.Contract(contractAbi, CONTRACT_ADDRESS)
+	contract = new web3.eth.Contract(spaceAbi, CONTRACT_ADDRESS)
 	tokenContract = new web3.eth.Contract(tokenAbi, TOKEN_ADDRESS)
 }
 
@@ -214,7 +215,7 @@ async function joinCheckSuccess(userId) {
 }
 
 // a function to let the user know whether they failed (not enough tokens in wallet)
-async function joinCheckFailure(userId) { await tg.sendMessage(userId, 'Sorry, there is not enough yCAKE in your wallet 😢') }
+async function joinCheckFailure(userId) { await tg.sendMessage(userId, `Sorry, there is not enough ${await tokenContract.methods.name().call()} in your wallet 😢`) }
 
 /**
  * A function to kick 'em all
@@ -327,7 +328,7 @@ bot.on('text', async (ctx) => {
 
 		if (msg.includes('/userinvested'))
 			// returns the amount of tokens the user invested
-			return ctx.reply(`${repliedTo.from.first_name} has ${await howMuchInvested(repliedTo.from.id)} ${TOKEN_NAME} tokens in their wallet`)
+			return ctx.reply(`${repliedTo.from.first_name} has ${await howMuchInvested(repliedTo.from.id)} ${await tokenContract.name()} tokens in their wallet`)
 
 		if (msg.includes('/stats')) {
 			// get the user statistics
@@ -400,52 +401,47 @@ bot.on('text', async (ctx) => {
 // catch any errors and print them to the standard output
 bot.catch((err, ctx) => console.log(`Ooops, encountered an error for ${ctx.updateType}`, err))
 
+async function checkKick(address) {
+	// loop through all the accounts in the database
+	for (const account of await db.get('accounts')) {
+		if (account.address == address)
+		{
+			const userId = account.id
+
+			// and kick the user if they do not have enough yCAKE tokens
+			if (!await userHasInvestedEnoughTokens(userId))
+				await kickUser(userId, 'they didn\'t have enough tokens 😢')
+		}
+	}
+}
+
 initContract().then(async () => {
 	console.log('Starting the bot...')
 	// start the bot
 	await bot.launch()
 
-	console.log('Setting up listeners...')
+	console.log('Starting listeners...')
 
-	/*
 	contract.events.Deposit({ fromBlock: 'latest' }, console.log)
 	.on('data', event => {
-		console.log(event)
+		console.log(event.returnValues)
 	})
 	.on('error', console.error)
 
 	contract.events.Withdraw({ fromBlock: 'latest' }, console.log)
 	.on('data', event => {
-		console.log(event)
-
-		// loop through all the accounts in the database
-		for (const account of await db.get('accounts')) {
-			if (account.address == event.address)
-			{
-				const userId = account.id
-		
-				// and kick the user if they do not have enough yCAKE tokens
-				if (!await userHasInvestedEnoughTokens(userId))
-					await kickUser(userId, 'they didn\'t have enough tokens 😢')
-			}
-		}
-		
+		console.log(event.returnValues.address)
+		checkKick(event.returnValues.address)
 	})
 	.on('error', console.error)
-*/
-	console.log(`Starting event listeners...`)
-	contract.events.allEvents()
-	.on('data', async function(event) {
-		console.log(event);
-	})
-	.on('error', console.error)
-
 
 	// enable graceful stop
 	process.once('SIGINT', () => bot.stop('SIGINT'))
 	process.once('SIGTERM', () => bot.stop('SIGTERM'))
 
 	console.log('Medousa is alive...')
+
+	//console.log(await tokenContract.methods.symbol())
 })
 
 module.exports.notifyBot = async function notifyBot(userId) {
