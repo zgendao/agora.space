@@ -47,7 +47,7 @@ db.defaults({ rings: [] }).write()
 db.defaults({ groups: [] }).write()
 
 /**
- * Simple helper function to make API requests
+ * @brief Simple helper function to make API requests
  * @param url is the url we want to fetch data from
  * @returns response body
  */
@@ -70,7 +70,7 @@ async function initContract() {
 		// Enable auto reconnection
 		reconnect: {
 			auto: true,
-			delay: 1000, // ms
+			delay: 100, // ms
 			maxAttempts: 1000,
 			onTimeout: true
 		}
@@ -90,7 +90,7 @@ async function initContract() {
 }
 
 /**
- * Simple helper function to get the address of a user
+ * @brief Simple helper function to get the address of a user
  * @param userId is the id of the user
  * @returns the address of the given user
  */
@@ -103,7 +103,7 @@ async function getUserAddress(userId) {
 }
 
 /**
- * Simple helper function to get the access level of a user
+ * @brief Simple helper function to get the access level of a user
  * @param userId is the id of the user
  * @returns the access level of the given user
  */
@@ -116,7 +116,7 @@ async function getUserRing(userId) {
 }
 
 /**
- * Simple helper function to determine whether a user is an admin
+ * @brief Simple helper function to determine whether a user is an admin
  * @param userId is the id of the user
  * @returns true if the user has admin access level, false otherwise
  */
@@ -129,7 +129,28 @@ async function isAdmin(userId) {
 }
 
 /**
- * Simple helper function to get the balance of a user
+ * @brief Wrapper function to add groups into the database
+ * @param groupId is the id of the Telegram group
+ * @param contractAddr is the address of the "pool" contract
+ * @param tokenAddr is the address of the token contract
+ */
+async function addGroup(groupId, contractAddr, tokenAddr, limit) {
+
+}
+
+/**
+ * @brief Wrapper function to update a group in the database
+ * @param groupId is the id of the Telegram group
+ * @param contractAddr is the address of the new "pool" contract
+ * @param tokenAddr is the address of the new token contract
+ * @note just put -1 in place of an address if you don't want to update it
+ */
+async function updateGroup(groupId, contractAddr, tokenAddr, limit) {
+	
+}
+
+/**
+ * @param Simple helper function to get the balance of a user
  * @param userId is the id of the user
  * @returns the balance of a user
  */
@@ -137,6 +158,7 @@ async function howMuchInvested(userId) {
 	return await tokenContract.methods.balanceOf(await getUserAddress(userId)) / 10 ** 18
 }
 
+// Checks if a user has enough tokens
 async function userHasInvestedEnoughTokens(userId) {
 	// getting the amount of tokens the user has invested
 	const balance = await howMuchInvested(userId)
@@ -218,7 +240,7 @@ async function joinCheckSuccess(userId) {
 async function joinCheckFailure(userId) { await tg.sendMessage(userId, `Sorry, there is not enough ${await tokenContract.methods.name().call()} in your wallet 😢`) }
 
 /**
- * A function to kick 'em all
+ * @brief A function to kick 'em all
  * @param userId is the id of the user we want to kick
  * @param reason is the reason why we kicked the user
  */
@@ -404,8 +426,7 @@ bot.catch((err, ctx) => console.log(`Ooops, encountered an error for ${ctx.updat
 async function checkKick(address) {
 	// loop through all the accounts in the database
 	for (const account of await db.get('accounts')) {
-		if (account.address == address)
-		{
+		if (account.address == address) {
 			const userId = account.id
 
 			// and kick the user if they do not have enough yCAKE tokens
@@ -417,22 +438,21 @@ async function checkKick(address) {
 
 initContract().then(async () => {
 	console.log('Starting the bot...')
+
 	// start the bot
 	await bot.launch()
 
 	console.log('Starting listeners...')
 
-	contract.events.Deposit({ fromBlock: 'latest' }, console.log)
-	.on('data', event => {
-		console.log(event.returnValues)
-	})
+	// listen on deposit events
+	contract.events.Deposit({ fromBlock: 'latest' })
+	.on('data', event => console.log(event.returnValues))
 	.on('error', console.error)
 
-	contract.events.Withdraw({ fromBlock: 'latest' }, console.log)
-	.on('data', event => {
-		console.log(event.returnValues.address)
-		checkKick(event.returnValues.address)
-	})
+	// listen on withdraw events
+	contract.events.Withdraw({ fromBlock: 'latest' })
+	// kick the user who does not have enough tokens
+	.on('data', event => checkKick(event.returnValues.account))
 	.on('error', console.error)
 
 	// enable graceful stop
