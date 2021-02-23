@@ -1,7 +1,7 @@
 import { useState, createContext, useContext, useEffect } from "react";
 import { AppConstsContext } from "./AppConsts";
 import { AccountContext } from "./Account";
-import { bep20Abi } from "../abi/bep20ABI.js";
+import { erc20Abi } from "../abi/erc20ABI.js";
 
 const TokenAddressesContext = createContext();
 
@@ -12,11 +12,11 @@ const TokenAddressesProvider = ({ children }) => {
   const [approvalNeeded, setApprovalNeeded] = useState(true);
 
   const yCakeContract = new web3.eth.Contract(
-    bep20Abi,
+    erc20Abi,
     process.env.REACT_APP_YCAKE_ADDRESS
   );
   const agoraTokenContract = new web3.eth.Contract(
-    bep20Abi,
+    erc20Abi,
     process.env.REACT_APP_AGT_ADDRESS
   );
 

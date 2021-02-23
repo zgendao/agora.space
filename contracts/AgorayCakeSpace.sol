@@ -2,12 +2,13 @@
 pragma solidity 0.7.6;
 
 import "./token/AgoraToken.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 /// @title A contract for staking tokens
 contract AgorayCakeSpace is Ownable {
 
     // Tokens managed by the contract
-    IBEP20 internal stakeToken;
+    IERC20 internal stakeToken;
     AgoraToken internal returnToken;
 
     // For timelock
@@ -24,7 +25,7 @@ contract AgorayCakeSpace is Ownable {
     /// @param _stakeTokenAddress The address of the token to be staked, that the contract accepts
     /// @param _returnTokenAddress The address of the token that's given in return
     constructor(address _stakeTokenAddress, address _returnTokenAddress) {
-        stakeToken = IBEP20(_stakeTokenAddress);
+        stakeToken = IERC20(_stakeTokenAddress);
         returnToken = AgoraToken(_returnTokenAddress);
     }
 
@@ -32,7 +33,7 @@ contract AgorayCakeSpace is Ownable {
     /// @dev The depositor should approve the contract to manage stakingTokens
     /// @dev For minting returnTokens, this contract should have MINTER_ROLE
     /// @param _amount The amount to be deposited in the smallest unit of the token
-    function deposit(uint256 _amount) public {
+    function deposit(uint256 _amount) external {
         require(_amount > 0, "Non-positive deposit amount");
         require(timelocks[msg.sender].length < 600, "Too many deposits without without checking the timelock entries");
         require(stakeToken.allowance(msg.sender, address(this)) >= _amount, "Allowance not sufficient");
@@ -49,7 +50,7 @@ contract AgorayCakeSpace is Ownable {
     /// @dev This contract should have sufficient allowance to be able to burn returnTokens from the user
     /// @dev For burning returnTokens, this contract should have MINTER_ROLE
     /// @param _amount The amount to be withdrawn in the smallest unit of the token
-    function withdraw(uint256 _amount) public {
+    function withdraw(uint256 _amount) external {
         require(_amount > 0, "Non-positive withdraw amount");
         require(returnToken.allowance(msg.sender, address(this)) >= _amount, "Token allowance not sufficient");
         require(returnToken.balanceOf(msg.sender) - getLockedAmount(msg.sender) >= _amount, "Not enough unlocked tokens");
@@ -60,7 +61,7 @@ contract AgorayCakeSpace is Ownable {
 
     /// @notice Sets the timelock interval for new deposits
     /// @param _minutes The desired interval in minutes
-    function setLockInterval(uint256 _minutes) public onlyOwner {
+    function setLockInterval(uint256 _minutes) external onlyOwner {
         lockInterval = _minutes;
     }
 
