@@ -33,7 +33,8 @@ contract AgorayCakeSpace is Ownable {
     /// @dev For minting returnTokens, this contract should have MINTER_ROLE
     /// @param _amount The amount to be deposited in the smallest unit of the token
     function deposit(uint256 _amount) public {
-        require(_amount > 0, "Deposit amount non-positive");
+        require(_amount > 0, "Non-positive deposit amount");
+        require(timelocks[msg.sender].length < 600, "Too many deposits without without checking the timelock entries");
         require(stakeToken.allowance(msg.sender, address(this)) >= _amount, "Allowance not sufficient");
         stakeToken.transferFrom(msg.sender, address(this), _amount);
         returnToken.mint(msg.sender, _amount);
@@ -49,7 +50,7 @@ contract AgorayCakeSpace is Ownable {
     /// @dev For burning returnTokens, this contract should have MINTER_ROLE
     /// @param _amount The amount to be withdrawn in the smallest unit of the token
     function withdraw(uint256 _amount) public {
-        require(_amount > 0, "Withdraw amount non-positive");
+        require(_amount > 0, "Non-positive withdraw amount");
         require(returnToken.allowance(msg.sender, address(this)) >= _amount, "Token allowance not sufficient");
         require(returnToken.balanceOf(msg.sender) - getLockedAmount(msg.sender) >= _amount, "Not enough unlocked tokens");
         returnToken.burn(msg.sender, _amount);
@@ -66,7 +67,7 @@ contract AgorayCakeSpace is Ownable {
     /// @notice Checks the amount of locked tokens for an account and deletes any expired lock data
     /// @param _investor The address whose tokens should be checked
     /// @return The amount of locked tokens
-    function getLockedAmount(address _investor) internal returns (uint256) {
+    function getLockedAmount(address _investor) public returns (uint256) {
         uint256 lockedAmount = 0;
         LockedItem[] storage usersLocked = timelocks[_investor];
         uint256 usersLockedLength = usersLocked.length;
