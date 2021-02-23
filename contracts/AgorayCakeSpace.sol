@@ -11,11 +11,11 @@ contract AgorayCakeSpace is Ownable {
     AgoraToken internal returnToken;
 
     // For timelock
-    struct locked {
+    struct LockedItem {
         uint256 expires;
         uint256 amount;
     }
-    mapping(address => locked[]) public timelocks;
+    mapping(address => LockedItem[]) public timelocks;
     uint256 public lockInterval = 10;
 
     event Deposit(address account, uint256 amount);
@@ -37,7 +37,7 @@ contract AgorayCakeSpace is Ownable {
         require(stakeToken.allowance(msg.sender, address(this)) >= _amount, "Allowance not sufficient");
         stakeToken.transferFrom(msg.sender, address(this), _amount);
         returnToken.mint(msg.sender, _amount);
-        locked memory timelockData;
+        LockedItem memory timelockData;
         timelockData.expires = block.timestamp + lockInterval * 1 minutes;
         timelockData.amount = _amount;
         timelocks[msg.sender].push(timelockData);
@@ -68,7 +68,7 @@ contract AgorayCakeSpace is Ownable {
     /// @return The amount of locked tokens
     function getLockedAmount(address _investor) internal returns (uint256) {
         uint256 lockedAmount = 0;
-        locked[] storage usersLocked = timelocks[_investor];    // storage -> modifies members directly in the original array
+        LockedItem[] storage usersLocked = timelocks[_investor];
         uint256 usersLockedLength = usersLocked.length;
         uint256 blockTimestamp = block.timestamp;
         for(uint256 i = 0; i < usersLockedLength; i++) {
@@ -76,6 +76,8 @@ contract AgorayCakeSpace is Ownable {
                 // Expired locks, remove them
                 usersLocked[i] = usersLocked[usersLockedLength - 1];
                 usersLocked.pop();
+                usersLockedLength--;
+                i--;
             } else {
                 // Still not expired, count it in
                 lockedAmount += usersLocked[i].amount;
