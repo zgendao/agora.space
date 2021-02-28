@@ -290,8 +290,23 @@ bot.on('new_chat_members', async (ctx) => {
 			await ctx.reply(`Hi, ${member.first_name}!`)
 			await ctx.reply(`😄 Welcome to the ${(await tg.getChat(groupId)).title}! 🎉`)
 		}
-	} else
-		await ctx.reply("Hello guys, good to see you!")
+	} else {
+		await ctx.reply("Hello guys, good to see you! 👋")
+
+		if (await getGroup(groupId) === undefined)
+		{
+			await ctx.reply("This group is not yet configured to use Medousa")
+			await ctx.replyWithMarkdown(
+				'Give me admin rights (manage users) then hit the configure button to configure me so I can manage your group:',
+				markdown.markup(
+					Markup.inlineKeyboard([
+						[Markup.urlButton('Configure ⚙', 'https://agora.space/configure')],
+						[Markup.callbackButton("Not now", "nope")]
+					])
+				)
+			)
+		}
+	}
 })
 
 // listening on members leaving the group
