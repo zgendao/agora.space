@@ -1,4 +1,4 @@
-export const bep20Abi = [
+[
   {
     "inputs": [
       {
@@ -673,4 +673,4 @@ export const bep20Abi = [
     "stateMutability": "nonpayable",
     "type": "function"
   }
-];
+]
