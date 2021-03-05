@@ -1,7 +1,7 @@
 // Token properties
 // NOTE: change them before deploying
 const stakeTokenAddress = "";
-const returnTokenName = "Agora Token";
+const returnTokenName = "Agora.space Token";
 const returnTokenSymbol = "AGT";
 
 // Contracts
