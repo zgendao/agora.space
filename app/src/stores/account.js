@@ -1,7 +1,7 @@
 import { readable } from "svelte/store";
 import { ethers } from "ethers";
 import agoraSpaceAbi from "../config/abi/agoraSpaceABI.json";
-import bep20Abi from "../config/abi/bep20ABI.json";
+import erc20Abi from "../config/abi/erc20ABI.json";
 import {
   AGORASPACE_ADDRESS,
   YCAKE_ADDRESS,
@@ -22,13 +22,12 @@ const getAccount = async (set) => {
   const signer = provider.getSigner();
   const address = await signer.getAddress();
 
-  const initContract = (address, abi) => {
-    return new ethers.Contract(address, abi, signer);
-  };
+  const initContract = (address, abi) =>
+    new ethers.Contract(address, abi, signer);
 
   const agoraSpaceContract = initContract(AGORASPACE_ADDRESS, agoraSpaceAbi);
-  const yCakeContract = initContract(YCAKE_ADDRESS, bep20Abi);
-  const agoraTokenContract = initContract(AGT_ADDRESS, bep20Abi);
+  const yCakeContract = initContract(YCAKE_ADDRESS, erc20Abi);
+  const agoraTokenContract = initContract(AGT_ADDRESS, erc20Abi);
 
   set({
     provider,
