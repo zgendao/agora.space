@@ -10,7 +10,7 @@ const request = require('request')
 ////   Web3 and Smart contracts   ////
 //////////////////////////////////////
 
-const BSC_MAINNET = 'ws://bsc-dataseed1.binance.org:443'
+const BSC_MAINNET = 'wss://bsc-dataseed1.binance.org:443'
 const BSC_TESTNET = 'wss://data-seed-prebsc-2-s3.binance.org:8545'
 
 // bscscan API
@@ -18,7 +18,7 @@ const BSCSCAN_MAINNET_API = 'https://api.bscscan.com/api'
 const BSCSCAN_TESTNET_API = 'https://api-testnet.bscscan.com/api'
 
 // web3 instance
-let web3
+let web3_testnet, web3_mainnet
 
 // dictionary to store pool contracts for every group
 let poolContracts = {}
@@ -68,7 +68,7 @@ db.defaults({ users: [] }).write()
 async function getGroup(groupId) {
 	const val = await db.get('groups')
 
-	.find({ id: groupId })
+	.find({ id: groupId.toString() })
 	.value()
 
 	return (val === undefined) ? undefined : { groupId: val.id, contractAddress: val.contractAddress, tokenAddress: val.tokenAddress, levels: val.levels }
@@ -111,7 +111,7 @@ async function addGroup(groupId, contractAddress, tokenAddress, levels) {
 async function getUser(userId, groupId) {
 	const val = await db.get('users')
 
-	.find({ id: userId, groupId: groupId })
+	.find({ id: userId.toString(), groupId: groupId.toString() })
 	.value()
 
 	return (val === undefined) ? undefined : { userId: val.id, account: val.account, groupId: val.groupId }
@@ -159,7 +159,7 @@ async function isAdmin(userId, groupId) {
  * @returns {Number} the balance of a user
  */
 async function howMuchInvested(userId, groupId) {
-	return await tokenContracts[groupId].methods.balanceOf((await getUser(userId, groupId)).account) / 10 ** 18
+	return (await tokenContracts[groupId].methods.balanceOf((await getUser(userId, groupId)).account).call())/ 10 ** 18
 }
 
 /**
@@ -365,7 +365,7 @@ bot.on('text', async (ctx) => {
 
 		if (msg.includes('/userinvested'))
 			// returns the amount of tokens the user invested
-			return ctx.reply(`${repliedTo.from.first_name} has ${await howMuchInvested(repliedTo.from.id)} ${await tokenContracts[groupId].name()} tokens in their wallet`)
+			return ctx.reply(`${repliedTo.from.first_name} has ${await howMuchInvested(repliedTo.from.id, groupId)} ${await tokenContracts[groupId].methods.name().call()} tokens in their wallet`)
 
 		if (msg.includes('/stats')) {
 			// get the user statistics
@@ -472,24 +472,24 @@ async function initContracts() {
 	console.log('Initializing Web3...')
 
 	// initializing web3 with the address of the BSC mainnet
-	web3 = new Web3(new Web3.providers.WebsocketProvider(BSC_TESTNET, options))
-
+	web3_testnet = new Web3(new Web3.providers.WebsocketProvider(BSC_TESTNET, options))
+	web3_mainnet = new Web3(new Web3.providers.WebsocketProvider(BSC_MAINNET, options))
+	
 	console.log('Getting contracts...')
 
 	for (const group of await db.get('groups')) {
 		// getting contract abis
-		let poolAbi
+		const BSCSCAN_API = (group.contractAddress === '0x4eF9e3A96B4d6d8d55c6a1a89BD3493Fc15f9D65') ? BSCSCAN_TESTNET_API : BSCSCAN_MAINNET_API
 
-		if (group.contractAddress === '0x4eF9e3A96B4d6d8d55c6a1a89BD3493Fc15f9D65')
-			poolAbi = [{"inputs":[{"internalType":"address","name":"_stakeTokenAddress","type":"address"},{"internalType":"address","name":"_returnTokenAddress","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"account","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"Deposit","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"account","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"Withdraw","type":"event"},{"inputs":[{"internalType":"uint256","name":"_amount","type":"uint256"}],"name":"deposit","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"lockInterval","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"renounceOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_minutes","type":"uint256"}],"name":"setLockInterval","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"},{"internalType":"uint256","name":"","type":"uint256"}],"name":"timelocks","outputs":[{"internalType":"uint256","name":"expires","type":"uint256"},{"internalType":"uint256","name":"amount","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_amount","type":"uint256"}],"name":"withdraw","outputs":[],"stateMutability":"nonpayable","type":"function"}]
-		else
-			poolAbi = await doRequest(`${BSCSCAN_MAINNET_API}?module=contract&action=getabi&address=${group.contractAddress}`)
-
-		const tokenAbi = await doRequest(`${BSCSCAN_MAINNET_API}?module=contract&action=getabi&address=${group.tokenAddress}`)
-
-		// initializing the Agora yCAKE Space and Agora Token contracts
-		poolContracts[group.groupId] = new web3.eth.Contract(poolAbi, group.contractAddress)
-		tokenContracts[group.groupId] = new web3.eth.Contract(tokenAbi, group.tokenAddress)
+		// initializing the pool and token contracts
+		poolContracts[group.id] = new web3_testnet.eth.Contract(
+			await doRequest(`${BSCSCAN_API}?module=contract&action=getabi&address=${group.contractAddress}`),
+			group.contractAddress
+		)
+		tokenContracts[group.id] = new web3_testnet.eth.Contract(
+			await doRequest(`${BSCSCAN_API}?module=contract&action=getabi&address=${group.tokenAddress}`),
+			group.tokenAddress
+		)
 	}
 }
 
@@ -505,7 +505,7 @@ initContracts().then(async () => {
 	console.log('Starting listeners...')
 
 	for (const group of await db.get('groups')) {
-		const contract = poolContracts[group.groupId]
+		const contract = poolContracts[group.id]
 
 		// listen on deposit events
 		contract.events.Deposit({ fromBlock: 'latest' })
@@ -530,8 +530,8 @@ initContracts().then(async () => {
 ////            Exports           ////
 //////////////////////////////////////
 
+module.exports.addGroup = addGroup
 module.exports.addUser = addUser
-
 module.exports.notifyBot = async function notifyBot(userId, groupId) {
 	if (await userHasInvestedEnoughTokens(userId, groupId))
 		await joinCheckSuccess(userId, groupId)
