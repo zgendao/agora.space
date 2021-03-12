@@ -7,7 +7,7 @@ const FileSync = require('lowdb/adapters/FileSync')
 const request = require('request')
 
 //////////////////////////////////////
-////   Web3 and Smart contracts   ////
+////        Web3 constants        ////
 //////////////////////////////////////
 
 const BSC_MAINNET = 'wss://bsc-dataseed1.binance.org:443'
@@ -67,7 +67,6 @@ db.defaults({ users: [] }).write()
  */
 async function getGroup(groupId) {
 	const val = await db.get('groups')
-
 	.find({ id: groupId.toString() })
 	.value()
 
@@ -89,6 +88,8 @@ async function addGroup(groupId, contractAddress, tokenAddress, levels) {
 		.assign({ id: groupId, contractAddress: contractAddress, tokenAddress: tokenAddress, levels: levels })
 		.write()
 
+		onNewGroup(groupId)
+
 		return true
 	} else {
 		await db.get('groups')
@@ -99,6 +100,14 @@ async function addGroup(groupId, contractAddress, tokenAddress, levels) {
 	}
 }
 
+/**
+ * Registers the event listeners for a freshly added group.
+ * @param {String} groupId is the id o the Telegram group
+ */
+async function onNewGroup(groupId) {
+	setupListeners(groupId)
+}
+
 //////////////////////////////////////
 ////           Users              ////
 //////////////////////////////////////
@@ -106,15 +115,30 @@ async function addGroup(groupId, contractAddress, tokenAddress, levels) {
 /**
  * Returns a user object which contains the id, account address and group id.
  * @param {String} userId is the id of the Telegram user
+ * @param {String} groupId is the id of the Telegram group
  * @returns {[String, String, String]} the user id, account address and group id
  */
 async function getUser(userId, groupId) {
 	const val = await db.get('users')
-
 	.find({ id: userId.toString(), groupId: groupId.toString() })
 	.value()
 
 	return (val === undefined) ? undefined : { userId: val.id, account: val.account, groupId: val.groupId }
+}
+
+/**
+ * Returns a list of users that are members of the specified group.
+ * @param {String} groupId is the id of the Telegram group
+ * @returns {[Any]} the user id, account address and group id for every user
+ */
+ async function getUsersOfGroup(groupId) {
+	let users = []
+	
+	for (const user of await db.get('users'))
+		if (user.groupId == groupId.toString())
+			users.push(user)
+
+	return users
 }
 
 /**
@@ -159,7 +183,7 @@ async function isAdmin(userId, groupId) {
  * @returns {Number} the balance of a user
  */
 async function howMuchInvested(userId, groupId) {
-	return (await tokenContracts[groupId].methods.balanceOf((await getUser(userId, groupId)).account).call())/ 10 ** 18
+	return (await tokenContracts[groupId].methods.balanceOf((await getUser(userId, groupId)).account).call()) / 10 ** 18
 }
 
 /**
@@ -251,6 +275,7 @@ async function joinCheckFailure(userId, groupId) {
 /**
  * @brief A function to kick 'em all
  * @param {String} userId is the id of the user we want to kick
+ * @param {String} groupId is the id of the group
  * @param {String} reason is the reason why we kicked the user
  */
 async function kickUser(userId, groupId, reason) {
@@ -341,6 +366,9 @@ bot.on('text', async (ctx) => {
 						'@admin - tag all the admins'
 
 	if (groupId < 0 && await isAdmin(userId, groupId)) {
+		const groupName = (await tg.getChat(groupId)).title
+		const tokenName = await tokenContracts[groupId].methods.name().call()
+
 		if (msg.includes('/help'))
 			return ctx.replyWithMarkdown(
 				help +
@@ -365,20 +393,16 @@ bot.on('text', async (ctx) => {
 
 		if (msg.includes('/userinvested'))
 			// returns the amount of tokens the user invested
-			return ctx.reply(`${repliedTo.from.first_name} has ${await howMuchInvested(repliedTo.from.id, groupId)} ${await tokenContracts[groupId].methods.name().call()} tokens in their wallet`)
+			return ctx.reply(`${repliedTo.from.first_name} has ${await howMuchInvested(repliedTo.from.id, groupId)} ${tokenName} tokens in their wallet`)
 
 		if (msg.includes('/stats')) {
 			// get the user statistics
 			let users = '', values = ''
 			let ring0 = 0, ring1 = 0, ring2 = 0, ring3 = 0
 
-			for (const account of await db.get('accounts')) {
-				const userId = account.id
-
-				// get the member object using the user's id
-				const member = (await tg.getChatMember(GRP_ID, userId)).user
-
-				const ring = await getUserRing(userId)
+			for (const user of await getUsersOfGroup(groupId)) {
+				const userId = user.id
+				const ring = await getUserRing(userId, groupId)
 
 				if (ring === 3)
 					ring3++
@@ -389,25 +413,25 @@ bot.on('text', async (ctx) => {
 				else
 					ring0++
 
-				users += `'${member.username}',`
-				values += `${await howMuchInvested(member.id)},`
+				users += `'${(await tg.getChatMember(groupId, userId)).user.username}',`
+				values += `${await howMuchInvested(userId, groupId)},`
 			}
 
 			// send a cool doughnut chart
 			await tg.sendPhoto(
 				ctx.chat.id,
-				encodeURI(`https://quickchart.io/chart?bkg=white&c={ type: 'doughnut', data: { datasets: [ { data: [${ring0}, ${ring1}, ${ring2}, ${ring3}], backgroundColor: ['rgb(242, 104, 107)','rgb(106, 212, 116)','rgb(91, 165, 212)','rgb(217, 190, 69)'], label: 'Dispersion of the ${GROUP_NAME} premium members', }, ], labels: ['Admin', 'Diamond', 'Advanced', 'Premium'], }, options: { plugins: { datalabels: { color: 'white' }}, title: { display: true, text: '${GROUP_NAME} members', }, },}`),
-				{ caption: `Here is a cool doughnut chart which shows the dispersion of premium users in the group '${GROUP_NAME}'` }
+				encodeURI(`https://quickchart.io/chart?bkg=white&c={ type: 'doughnut', data: { datasets: [ { data: [${ring0}, ${ring1}, ${ring2}, ${ring3}], backgroundColor: ['rgb(242, 104, 107)','rgb(106, 212, 116)','rgb(91, 165, 212)','rgb(217, 190, 69)'], label: 'Dispersion of the ${groupName} premium members', }, ], labels: ['Admin', 'Diamond', 'Advanced', 'Premium'], }, options: { plugins: { datalabels: { color: 'white' }}, title: { display: true, text: '${groupName} members', }, },}`),
+				{ caption: `Here is a cool doughnut chart which shows the dispersion of premium users in the group '${groupName}'` }
 			)
 
 			// send a cool bar chart
 			return await tg.sendPhoto(
 				ctx.chat.id,
-				encodeURI(`https://quickchart.io/chart?bkg=white&c={type:'bar', data: { labels: [${users}], datasets: [{ label: '${TOKEN_NAME}', data: [${values}], backgroundColor: getGradientFillHelper('horizontal', ['rgb(91, 165, 212)', 'rgb(106, 212, 116)']), }] }}`),
-				{ caption: `Here is another cool graph representing the amount of ${TOKEN_NAME} in each member's wallet` }
+				encodeURI(`https://quickchart.io/chart?bkg=white&c={type:'bar', data: { labels: [${users}], datasets: [{ label: '${tokenName}', data: [${values}], backgroundColor: getGradientFillHelper('horizontal', ['rgb(91, 165, 212)', 'rgb(106, 212, 116)']), }] }}`),
+				{ caption: `Here is another cool graph representing the amount of ${tokenName} in each member's wallet` }
 			)
 		}
-		
+
 		if (msg.includes('/json'))
 			// get the message as a stringified JSON object
 			return ctx.reply(JSON.stringify(repliedTo, null, 2))
@@ -493,6 +517,25 @@ async function initContracts() {
 	}
 }
 
+/**
+ * Sets up listeners for the given group.
+ * @param {String} groupId is the id of the group
+ */
+async function setupListeners(groupId) {
+	const contract = poolContracts[groupId]
+
+	// listen on deposit events
+	contract.events.Deposit({ fromBlock: 'latest' })
+	.on('data', event => console.log(event.returnValues))
+	.on('error', console.error)
+
+	// listen on withdraw events
+	contract.events.Withdraw({ fromBlock: 'latest' })
+	// kick the user who does not have enough tokens
+	.on('data', event => checkKick(event.returnValues.account))
+	.on('error', console.error)
+}
+
 initContracts().then(async () => {
 	console.log('Starting the bot...')
 
@@ -504,20 +547,8 @@ initContracts().then(async () => {
 
 	console.log('Starting listeners...')
 
-	for (const group of await db.get('groups')) {
-		const contract = poolContracts[group.id]
-
-		// listen on deposit events
-		contract.events.Deposit({ fromBlock: 'latest' })
-		.on('data', event => console.log(event.returnValues))
-		.on('error', console.error)
-	
-		// listen on withdraw events
-		contract.events.Withdraw({ fromBlock: 'latest' })
-		// kick the user who does not have enough tokens
-		.on('data', event => checkKick(event.returnValues.account))
-		.on('error', console.error)
-	}
+	for (const group of await db.get('groups'))
+		setupListeners(group.id)
 
 	// enable graceful stop
 	process.once('SIGINT', () => bot.stop('SIGINT'))
