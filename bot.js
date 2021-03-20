@@ -233,15 +233,15 @@ async function joinWelcome(ctx) {
 	])
 		await ctx.reply(message)
 
-	const keyboard = Markup.inlineKeyboard([
-		[Markup.urlButton('Agora 😍', 'https://agora.space')],
-		[Markup.urlButton('Test1 📘', 'https://agora.space')],
-		[Markup.urlButton('Test2 🐧', 'https://agora.space')],
-		[Markup.urlButton('Test3 🎓', 'https://agora.space')],
-		[Markup.urlButton('Test4 🏎', 'https://agora.space')],
-		[Markup.urlButton('Test5 🖥', 'https://agora.space')],
-		[Markup.callbackButton("Not now", "nope")]
-	])
+	let communityList = []
+
+	for (const group of await db.get('groups'))
+		communityList.push([Markup.loginButton((await tg.getChat(group.id)).title, `https://agora.space?grp=${group.id}`, {
+			bot_username: 'medousa_bot',
+			request_write_access: true
+		})])
+
+	const keyboard = Markup.inlineKeyboard(communityList)
 
 	await ctx.replyWithMarkdown('Choose one of the following communities:', markdown.markup(keyboard))
 }
@@ -322,10 +322,13 @@ bot.on('new_chat_members', async (ctx) => {
 		{
 			await ctx.reply("This group is not yet configured to use Medousa")
 			await ctx.replyWithMarkdown(
-				'Give me admin rights (manage users) then hit the configure button to configure me so I can manage your group:',
+				'Give me admin rights then hit the configure button to configure me so I can manage your group:',
 				markdown.markup(
 					Markup.inlineKeyboard([
-						[Markup.urlButton('Configure ⚙', 'https://agora.space/configure')],
+						[Markup.loginButton('Configure ⚙', `https://agora.space/configure?grp=${groupId}`, {
+							bot_username: 'medousa_bot',
+							request_write_access: true
+						})],
 						[Markup.callbackButton("Not now", "nope")]
 					])
 				)
@@ -336,17 +339,22 @@ bot.on('new_chat_members', async (ctx) => {
 
 // listening on members leaving the group
 bot.on('left_chat_member', async (ctx) => {
-	const msg = ctx.message
-
-	ctx.reply(`Bye, ${msg.left_chat_member.first_name} 😢`)
-
-	const userId	= msg.left_chat_member.id
+	const msg		= ctx.message
+	const member	= msg.left_chat_member
+	const userId	= member.id
 	const groupId	= msg.chat.id
 
-	// remove the user from the database
-	await db.get('users')
-	.remove({ id: userId, groupId: groupId })
-	.write()
+	if (userId !== (await tg.getMe()).id)
+	{
+		ctx.reply(`Bye, ${member.first_name} 😢`)
+	
+		// remove the user from the database
+		await db.get('users')
+		.remove({ id: userId, groupId: groupId })
+		.write()
+	} else
+		await db.get('groups')
+		.remove({ id: groupId })
 })
 
 // custom commands based on user input
