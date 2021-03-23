@@ -1,18 +1,21 @@
 import { triggerableDerived } from "./utils/triggerableDerived";
 import { account } from "./account.js";
 import { ethers } from "ethers";
+import { derived } from "svelte/store";
 
 export const stakeInfo = triggerableDerived(
   account,
   async ([$account], set) => {
+    if (!$account) return;
     set({ loading: true });
     const { address, agoraTokenContract, agoraSpaceContract } = $account;
 
     const timelocks = await getAllTimelocks(address, agoraSpaceContract);
+    const total = await getAgtBalance(address, agoraTokenContract);
     set({
-      total: await getAgtBalance(address, agoraTokenContract),
+      total: parseInt(total),
       timelocks,
-      withdrawable: getAgtLocked(timelocks, agoraTokenContract),
+      withdrawable: total - getAgtLocked(timelocks),
       timelockDuration: await getTimelockDuration(agoraSpaceContract),
       loading: false,
     });
@@ -20,6 +23,32 @@ export const stakeInfo = triggerableDerived(
   {
     loading: true,
   }
+);
+
+export const withdrawCountdown = derived(
+  stakeInfo,
+  ($stakeInfo, set) => {
+    const timelock = $stakeInfo.timelocks?.[0];
+    if (!timelock) {
+      set(0);
+    } else {
+      const interval = setInterval(() => {
+        const now = new Date().getTime();
+        const distance = timelock.expires * 1000 - now;
+
+        const minutesLeft = Math.floor(
+          (distance % (1000 * 60 * 60)) / (1000 * 60)
+        );
+
+        if (distance > 0) {
+          set(minutesLeft);
+        }
+      }, 1000);
+
+      return () => clearInterval(interval);
+    }
+  },
+  0
 );
 
 /** Gets the timelock duration on new deposits. */

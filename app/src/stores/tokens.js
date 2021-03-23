@@ -20,8 +20,11 @@ const getTokenAllowance = async (account, tokenContract) => {
   return allowance >= MAX_VALUE / BigInt(4);
 };
 
-export const approveToken = async (tokenContract, successFn) => {
-  tokenContract.approve(AGORASPACE_ADDRESS, MAX_VALUE).then((value) => {
-    successFn && successFn();
-  });
+export const approveToken = async (tokenContract, successFn, errorFn) => {
+  tokenContract
+    .approve(AGORASPACE_ADDRESS, MAX_VALUE)
+    .then((value) => {
+      successFn && successFn();
+    })
+    .catch(() => errorFn && errorFn());
 };
