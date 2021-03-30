@@ -5,7 +5,7 @@
 	"main": "bot.js",
 	"dependencies": {
 		"@openzeppelin/contracts": "^4.0.0",
-		"@truffle/hdwallet-provider": "^1.2.1",
+		"@truffle/hdwallet-provider": "^1.2.3",
 		"ethereumjs-util": "^7.0.7",
 		"live-server": "^1.2.1",
 		"lowdb": "^1.0.0",

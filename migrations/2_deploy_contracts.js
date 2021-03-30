@@ -5,7 +5,7 @@ const returnTokenName = "Agora.space Token";
 const returnTokenSymbol = "AGT";
 
 // Contracts
-const staking = artifacts.require("AgorayCakeSpace");
+const staking = artifacts.require("AgoraSpace");
 const returnToken = artifacts.require("AgoraToken");
 
 module.exports = async deployer  => {

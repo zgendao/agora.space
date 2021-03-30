@@ -1,6 +1,7 @@
 const HDWalletProvider = require('@truffle/hdwallet-provider');
 const fs = require('fs');
-const mnemonic = fs.readFileSync(".mnemonic").toString().trim();
+const mnemonic = fs.readFileSync('.mnemonic').toString().trim();
+const infuraKey = fs.existsSync('.infura') ? fs.readFileSync('.infura').toString().trim() : undefined
 
 module.exports = {
   /**
@@ -38,22 +39,16 @@ module.exports = {
       skipDryRun: true
     },
     ropsten: {
-      provider: () => {
-        const infuraKey = fs.readFileSync(".infura").toString().trim();
-        new HDWalletProvider(mnemonic, `https://ropsten.infura.io/v3/${infuraKey}`);
-      },
+      provider: () => new HDWalletProvider(mnemonic, `https://ropsten.infura.io/v3/${infuraKey}`),
       network_id: 3,              // Ropsten's id
       gas: 5500000,               // Ropsten has a lower block limit than mainnet
-      confirmations: 2,           // # of confs to wait between deployments. (default: 0)
-      networkCheckTimeout: 9000,  // Seems like the default value was not enough
+      confirmations: 1,           // # of confs to wait between deployments. (default: 0)
+      networkCheckTimeout: 90000, // Seems like the default value was not enough
       timeoutBlocks: 200,         // # of blocks before a deployment times out  (minimum/default: 50)
       skipDryRun: true            // Skip dry run before migrations? (default: false for public nets )
     },
     kovan: {
-      provider: () => {
-        const infuraKey = fs.readFileSync(".infura").toString().trim();
-        new HDWalletProvider(mnemonic, `https://kovan.infura.io/v3/${infuraKey}`);
-      },
+      provider: () => new HDWalletProvider(mnemonic, `https://kovan.infura.io/v3/${infuraKey}`),
       network_id: 42,
       gas: 5500000,
       confirmations: 2,
@@ -62,10 +57,7 @@ module.exports = {
 		},
     // For ethereum, gasPrice might need to be set manually
     ethereum: {
-      provider: () => {
-        const infuraKey = fs.readFileSync(".infura").toString().trim();
-        new HDWalletProvider(mnemonic, `https://mainnet.infura.io/v3/${infuraKey}`);
-      },
+      provider: () => new HDWalletProvider(mnemonic, `https://mainnet.infura.io/v3/${infuraKey}`),
       network_id: 1,
       gas: 4000000,
       confirmations: 2,
