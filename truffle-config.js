@@ -19,10 +19,10 @@ module.exports = {
     
     development: {
       host: "127.0.0.1",     // Localhost (default: none)
-      port: 8545,            // Standard BSC port (default: none)
+      port: 8545,            // Standard port (default: none)
       network_id: "*",       // Any network (default: none)
     },
-    testnet: {
+    bsctest: {
       provider: () => new HDWalletProvider(mnemonic, `https://data-seed-prebsc-1-s1.binance.org:8545`),
       network_id: 97,
       confirmations: 10,
@@ -37,7 +37,42 @@ module.exports = {
       timeoutBlocks: 200,
       skipDryRun: true
     },
-    
+    ropsten: {
+      provider: () => {
+        const infuraKey = fs.readFileSync(".infura").toString().trim();
+        new HDWalletProvider(mnemonic, `https://ropsten.infura.io/v3/${infuraKey}`);
+      },
+      network_id: 3,              // Ropsten's id
+      gas: 5500000,               // Ropsten has a lower block limit than mainnet
+      confirmations: 2,           // # of confs to wait between deployments. (default: 0)
+      networkCheckTimeout: 9000,  // Seems like the default value was not enough
+      timeoutBlocks: 200,         // # of blocks before a deployment times out  (minimum/default: 50)
+      skipDryRun: true            // Skip dry run before migrations? (default: false for public nets )
+    },
+    kovan: {
+      provider: () => {
+        const infuraKey = fs.readFileSync(".infura").toString().trim();
+        new HDWalletProvider(mnemonic, `https://kovan.infura.io/v3/${infuraKey}`);
+      },
+      network_id: 42,
+      gas: 5500000,
+      confirmations: 2,
+      timeoutBlocks: 200,
+      skipDryRun: true
+		},
+    // For ethereum, gasPrice might need to be set manually
+    ethereum: {
+      provider: () => {
+        const infuraKey = fs.readFileSync(".infura").toString().trim();
+        new HDWalletProvider(mnemonic, `https://mainnet.infura.io/v3/${infuraKey}`);
+      },
+      network_id: 1,
+      gas: 4000000,
+      confirmations: 2,
+      networkCheckTimeout: 9000000,
+      timeoutBlocks: 200,
+      skipDryRun: true
+    }
   },
 
   // Set default mocha options here, use special reporters etc.
@@ -48,7 +83,7 @@ module.exports = {
   // Configure your compilers
   compilers: {
     solc: {
-         version: "0.7.6",    // Fetch exact version from solc-bin (default: truffle's version)
+         version: "0.8.3",    // Fetch exact version from solc-bin (default: truffle's version)
       // docker: true,        // Use "0.5.1" you've installed locally with docker (default: false)
       // settings: {          // See the solidity docs for advice about optimization and evmVersion
       //  optimizer: {
