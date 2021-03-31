@@ -72,18 +72,18 @@ contract AgoraSpace is Ownable {
     function getLockedAmount(address _investor) public returns (uint256) {
         uint256 lockedAmount = 0;
         LockedItem[] storage usersLocked = timelocks[_investor];
-        uint256 usersLockedLength = usersLocked.length;
+        int256 usersLockedLength = int256(usersLocked.length);
         uint256 blockTimestamp = block.timestamp;
-        for(uint256 i = 0; i < usersLockedLength; i++) {
-            if (usersLocked[i].expires <= blockTimestamp) {
+        for(int256 i = 0; i < usersLockedLength; i++) {
+            if (usersLocked[uint256(i)].expires <= blockTimestamp) {
                 // Expired locks, remove them
-                usersLocked[i] = usersLocked[usersLockedLength - 1];
+                usersLocked[uint256(i)] = usersLocked[uint256(usersLockedLength) - 1];
                 usersLocked.pop();
                 usersLockedLength--;
                 i--;
             } else {
                 // Still not expired, count it in
-                lockedAmount += usersLocked[i].amount;
+                lockedAmount += usersLocked[uint256(i)].amount;
             }
         }
         return lockedAmount;
