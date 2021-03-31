@@ -39,7 +39,7 @@ module.exports = {
       skipDryRun: true
     },
     ropsten: {
-      provider: () => new HDWalletProvider(mnemonic, `https://ropsten.infura.io/v3/${infuraKey}`),
+      provider: () => new HDWalletProvider(mnemonic, `wss://ropsten.infura.io/ws/v3/${infuraKey}`),
       network_id: 3,              // Ropsten's id
       gas: 5500000,               // Ropsten has a lower block limit than mainnet
       confirmations: 1,           // # of confs to wait between deployments. (default: 0)
@@ -48,7 +48,7 @@ module.exports = {
       skipDryRun: true            // Skip dry run before migrations? (default: false for public nets )
     },
     kovan: {
-      provider: () => new HDWalletProvider(mnemonic, `https://kovan.infura.io/v3/${infuraKey}`),
+      provider: () => new HDWalletProvider(mnemonic, `wss://kovan.infura.io/ws/v3/${infuraKey}`),
       network_id: 42,
       gas: 5500000,
       confirmations: 2,
@@ -57,7 +57,7 @@ module.exports = {
 		},
     // For ethereum, gasPrice might need to be set manually
     ethereum: {
-      provider: () => new HDWalletProvider(mnemonic, `https://mainnet.infura.io/v3/${infuraKey}`),
+      provider: () => new HDWalletProvider(mnemonic, `wss://mainnet.infura.io/ws/v3/${infuraKey}`),
       network_id: 1,
       gas: 4000000,
       confirmations: 2,
