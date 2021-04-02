@@ -1,4 +1,4 @@
-const { TOKEN } = require('./.secret.js')
+const { BOT_API_KEY, ETH_API_KEY, INF_API_KEY } = require('./.secret.js')
 const { Telegraf, Markup } = require('telegraf')
 const Extra = require('telegraf/extra')
 const Web3 = require('web3')
@@ -10,15 +10,27 @@ const request = require('request')
 ////        Web3 constants        ////
 //////////////////////////////////////
 
+// Binance network websocket URLs
 const BSC_MAINNET = 'wss://bsc-dataseed1.binance.org:443'
 const BSC_TESTNET = 'wss://data-seed-prebsc-2-s3.binance.org:8545'
+
+// Ethereum network websocket URLs
+const ETH_MAINNET = `wss://mainnet.infura.io/ws/v3/${INF_API_KEY}`
+const ETH_TESTNET = `wss://ropsten.infura.io/ws/v3/${INF_API_KEY}`
 
 // bscscan API
 const BSCSCAN_MAINNET_API = 'https://api.bscscan.com/api'
 const BSCSCAN_TESTNET_API = 'https://api-testnet.bscscan.com/api'
 
+// etherscan API
+const ETHSCAN_MAINNET_API = 'https://api.etherscan.io/api'
+const ETHSCAN_TESTNET_API = 'https://api-ropsten.etherscan.io/api'
+
+// API helper constants
+const GET_ABI = 'module=contract&action=getabi'
+
 // web3 instance
-let web3_testnet, web3_mainnet
+let web3
 
 // dictionary to store pool contracts for every group
 let poolContracts = {}
@@ -31,7 +43,7 @@ let tokenContracts = {}
 //////////////////////////////////////
 
 // initializing the chatbot with our API token
-const bot = new Telegraf(TOKEN)
+const bot = new Telegraf(BOT_API_KEY)
 
 // telegram client instance
 const tg = bot.telegram
@@ -472,7 +484,7 @@ bot.on('text', async (ctx) => {
 //////////////////////////////////////
 
 /**
- * Simple helper function to make API requests
+ * Simple helper function to make API requests.
  * @param {String} url is the url we want to fetch data from
  * @returns {Promise<JSON>} response body
  */
@@ -485,6 +497,15 @@ function doRequest(url) {
 				reject(error)
 		})
 	})
+}
+
+/**
+ * Simple helper function to get the ABI of a smart contract.
+ * @param {String} address is the address of the smart contract
+ * @returns the ABI of the smart contract
+ */
+async function getAbi(address) {
+	return await doRequest(`${ETHSCAN_TESTNET_API}?${GET_ABI}&address=${address}&apikey=${ETH_API_KEY}`)
 }
 
 /**
@@ -503,23 +524,19 @@ async function initContracts() {
 
 	console.log('Initializing Web3...')
 
-	// initializing web3 with the address of the BSC mainnet
-	web3_testnet = new Web3(new Web3.providers.WebsocketProvider(BSC_TESTNET, options))
-	web3_mainnet = new Web3(new Web3.providers.WebsocketProvider(BSC_MAINNET, options))
+	// initializing web3
+	web3 = new Web3(new Web3.providers.WebsocketProvider(ETH_TESTNET, options))
 	
 	console.log('Getting contracts...')
 
 	for (const group of await db.get('groups')) {
-		// getting contract abis
-		const BSCSCAN_API = (group.contractAddress === '0x4eF9e3A96B4d6d8d55c6a1a89BD3493Fc15f9D65') ? BSCSCAN_TESTNET_API : BSCSCAN_MAINNET_API
-
 		// initializing the pool and token contracts
-		poolContracts[group.id] = new web3_testnet.eth.Contract(
-			await doRequest(`${BSCSCAN_API}?module=contract&action=getabi&address=${group.contractAddress}`),
+		poolContracts[group.id] = new web3.eth.Contract(
+			await getAbi(group.contractAddress),
 			group.contractAddress
 		)
-		tokenContracts[group.id] = new web3_testnet.eth.Contract(
-			await doRequest(`${BSCSCAN_API}?module=contract&action=getabi&address=${group.tokenAddress}`),
+		tokenContracts[group.id] = new web3.eth.Contract(
+			await getAbi(group.tokenAddress),
 			group.tokenAddress
 		)
 	}
@@ -563,6 +580,8 @@ initContracts().then(async () => {
 	process.once('SIGTERM', () => bot.stop('SIGTERM'))
 
 	console.log('Medousa is alive...')
+
+	console.log(await tg.exportChatInviteLink("-1001431174128"))
 })
 
 //////////////////////////////////////
