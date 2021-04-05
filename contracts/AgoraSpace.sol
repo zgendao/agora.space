@@ -36,8 +36,7 @@ contract AgoraSpace is Ownable {
     /// @param _amount The amount to be deposited in the smallest unit of the token
     function deposit(uint256 _amount) external {
         require(_amount > 0, "Non-positive deposit amount");
-        require(timelocks[msg.sender].length < 600, "Too many deposits without without checking the timelock entries");
-        require(stakeToken.allowance(msg.sender, address(this)) >= _amount, "Allowance not sufficient");
+        require(timelocks[msg.sender].length < 600, "Too many consecutive deposits");
         stakeToken.transferFrom(msg.sender, address(this), _amount);
         returnToken.mint(msg.sender, _amount);
         LockedItem memory timelockData;
