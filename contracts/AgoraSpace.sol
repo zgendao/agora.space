@@ -1,15 +1,16 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.7.6;
+pragma solidity 0.8.3;
 
-import "./token/AgoraToken.sol";
+import "./token/IAgoraToken.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 /// @title A contract for staking tokens
-contract AgorayCakeSpace is Ownable {
+/// @dev Conventially, this should be renamed to include the name of the token it receives, e.g. AgoraWETHSpace for WETH
+contract AgoraSpace is Ownable {
 
     // Tokens managed by the contract
     IERC20 internal stakeToken;
-    AgoraToken internal returnToken;
+    IAgoraToken internal returnToken;
 
     // For timelock
     struct LockedItem {
@@ -26,17 +27,16 @@ contract AgorayCakeSpace is Ownable {
     /// @param _returnTokenAddress The address of the token that's given in return
     constructor(address _stakeTokenAddress, address _returnTokenAddress) {
         stakeToken = IERC20(_stakeTokenAddress);
-        returnToken = AgoraToken(_returnTokenAddress);
+        returnToken = IAgoraToken(_returnTokenAddress);
     }
 
     /// @notice Accepts tokens, locks them and gives different tokens in return
     /// @dev The depositor should approve the contract to manage stakingTokens
-    /// @dev For minting returnTokens, this contract should have MINTER_ROLE
+    /// @dev For minting returnTokens, this contract should be the owner of them
     /// @param _amount The amount to be deposited in the smallest unit of the token
     function deposit(uint256 _amount) external {
         require(_amount > 0, "Non-positive deposit amount");
-        require(timelocks[msg.sender].length < 600, "Too many deposits without without checking the timelock entries");
-        require(stakeToken.allowance(msg.sender, address(this)) >= _amount, "Allowance not sufficient");
+        require(timelocks[msg.sender].length < 600, "Too many consecutive deposits");
         stakeToken.transferFrom(msg.sender, address(this), _amount);
         returnToken.mint(msg.sender, _amount);
         LockedItem memory timelockData;
@@ -48,7 +48,7 @@ contract AgorayCakeSpace is Ownable {
 
     /// @notice If the timelock is expired, gives back the staked tokens in return for the tokens obtained while depositing
     /// @dev This contract should have sufficient allowance to be able to burn returnTokens from the user
-    /// @dev For burning returnTokens, this contract should have MINTER_ROLE
+    /// @dev For burning returnTokens, this contract should be the owner of them
     /// @param _amount The amount to be withdrawn in the smallest unit of the token
     function withdraw(uint256 _amount) external {
         require(_amount > 0, "Non-positive withdraw amount");
@@ -71,18 +71,18 @@ contract AgorayCakeSpace is Ownable {
     function getLockedAmount(address _investor) public returns (uint256) {
         uint256 lockedAmount = 0;
         LockedItem[] storage usersLocked = timelocks[_investor];
-        uint256 usersLockedLength = usersLocked.length;
+        int256 usersLockedLength = int256(usersLocked.length);
         uint256 blockTimestamp = block.timestamp;
-        for(uint256 i = 0; i < usersLockedLength; i++) {
-            if (usersLocked[i].expires <= blockTimestamp) {
+        for(int256 i = 0; i < usersLockedLength; i++) {
+            if (usersLocked[uint256(i)].expires <= blockTimestamp) {
                 // Expired locks, remove them
-                usersLocked[i] = usersLocked[usersLockedLength - 1];
+                usersLocked[uint256(i)] = usersLocked[uint256(usersLockedLength) - 1];
                 usersLocked.pop();
                 usersLockedLength--;
                 i--;
             } else {
                 // Still not expired, count it in
-                lockedAmount += usersLocked[i].amount;
+                lockedAmount += usersLocked[uint256(i)].amount;
             }
         }
         return lockedAmount;
