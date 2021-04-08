@@ -1,20 +1,23 @@
 const { addUser, notifyBot } = require('./bot.js')
 const http = require('http')
-const low = require('lowdb')
-const FileSync = require('lowdb/adapters/FileSync')
 const util = require('ethereumjs-util')
 const utils = require('web3-utils')
 
-// initializing the lowdb database
-const adapter = new FileSync('db.json')
-const db = low(adapter)
-
 const server = http.createServer(async (req, res) => {
 	if (req.url.includes('/signed')) {
-		const query = require('url').parse(req.url, true).query
+		// getting the URL parameters
+		const query = require('url').URL(req.url, true).query
 
+		// getting the signed message
 		const sig = util.fromRpcSig(query.signed)
-		const publicKey = util.ecrecover(util.toBuffer(utils.sha3('hello friend')), sig.v, sig.r, sig.s)
+
+		// getting public key from the signed message
+		const publicKey = util.ecrecover(
+			util.toBuffer(utils.sha3('hello friend')),
+			sig.v, sig.r, sig.s
+		)
+
+		// converting the public key to address
 		const address = `0x${util.pubToAddress(publicKey).toString('hex')}`
 
 		console.log(`userId: ${query.userId}`)
@@ -26,8 +29,10 @@ const server = http.createServer(async (req, res) => {
 
 		console.log('User added to the database')
 
+		// let the bot know that a new user has been added
 		await notifyBot(query.userId, groupId)
 
+		// let the website know the request was successful
 		res.writeHead(200, { 'Content-Type': 'text/plain' })
 		res.write('success')
 		res.end()
