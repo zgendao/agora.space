@@ -10,21 +10,19 @@ const request = require('request')
 ////        Web3 constants        ////
 //////////////////////////////////////
 
-// Binance network websocket URLs
-const BSC_MAINNET = 'wss://bsc-dataseed1.binance.org:443'
-const BSC_TESTNET = 'wss://data-seed-prebsc-2-s3.binance.org:8545'
+// Infura
+const INFURA = `infura.io/ws/v3/${INF_API_KEY}`
 
 // Ethereum network websocket URLs
-const ETH_MAINNET = `wss://mainnet.infura.io/ws/v3/${INF_API_KEY}`
-const ETH_TESTNET = `wss://ropsten.infura.io/ws/v3/${INF_API_KEY}`
+const ETH_MAINNET = `wss://mainnet.${INFURA}`
+const ETH_TESTNET = `wss://ropsten.${INFURA}`
 
-// bscscan API
-const BSCSCAN_MAINNET_API = 'https://api.bscscan.com/api'
-const BSCSCAN_TESTNET_API = 'https://api-testnet.bscscan.com/api'
+// EtherScan base URL
+const ETHERSCAN = 'etherscan.io/api'
 
-// etherscan API
-const ETHSCAN_MAINNET_API = 'https://api.etherscan.io/api'
-const ETHSCAN_TESTNET_API = 'https://api-ropsten.etherscan.io/api'
+// EtherScan API
+const ETHSCAN_MAINNET_API = `https://api.${ETHERSCAN}`
+const ETHSCAN_TESTNET_API = `https://api-ropsten.${ETHERSCAN}`
 
 // API helper constants
 const GET_ABI = 'module=contract&action=getabi'
