@@ -1,4 +1,4 @@
-export const agoraSpaceAbi = [
+[
   {
     "inputs": [
       {
@@ -205,4 +205,4 @@ export const agoraSpaceAbi = [
     "stateMutability": "nonpayable",
     "type": "function"
   }
-];
+]

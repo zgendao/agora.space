@@ -1,4 +1,4 @@
-export const erc20Abi = [
+[
   {
     "inputs": [
       {
@@ -285,4 +285,4 @@ export const erc20Abi = [
     "stateMutability": "nonpayable",
     "type": "function"
   }
-];
+]
