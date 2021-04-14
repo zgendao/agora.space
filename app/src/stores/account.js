@@ -4,7 +4,7 @@ import agoraSpaceAbi from "../config/abi/agoraSpaceABI.json";
 import erc20Abi from "../config/abi/erc20ABI.json";
 import {
   AGORASPACE_ADDRESS,
-  YCAKE_ADDRESS,
+  DAI_ADDRESS,
   AGT_ADDRESS,
 } from "../config/constants.js";
 
@@ -26,7 +26,7 @@ const getAccount = async (set) => {
     new ethers.Contract(address, abi, signer);
 
   const agoraSpaceContract = initContract(AGORASPACE_ADDRESS, agoraSpaceAbi);
-  const yCakeContract = initContract(YCAKE_ADDRESS, erc20Abi);
+  const DaiContract = initContract(DAI_ADDRESS, erc20Abi);
   const agoraTokenContract = initContract(AGT_ADDRESS, erc20Abi);
 
   set({
@@ -34,7 +34,7 @@ const getAccount = async (set) => {
     signer,
     address,
     agoraSpaceContract,
-    yCakeContract,
+    DaiContract,
     agoraTokenContract,
   });
 };

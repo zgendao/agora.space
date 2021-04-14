@@ -12,8 +12,8 @@
   <div class="flex justify-between align-center">
     <h1 class="my-24 text-3xl font-extrabold text-gray-900 sm:text-5xl">
       {$stakeInfo.total
-        ? "You're part of the yCake community ✨"
-        : "Stake yCake to join the party"}
+        ? "You're part of the DAI community ✨"
+        : "Stake DAI to join the party"}
     </h1>
     <p
       class="my-auto font-medium transform translate-y-1 truncate max-w-[15rem] text-blue-500 px-5 py-2 bg-white rounded-full shadow-sm"
@@ -21,13 +21,13 @@
       {$account ? `Connected as: ${$account.address}` : "Not connected"}
     </p>
   </div>
-  <div class="flex relative justify-between bg-white shadow-md rounded-3xl">
+  <div class="relative flex justify-between bg-white shadow-md rounded-3xl">
     <div class="flex flex-col p-16 lg:w-[36rem]">
       {#if $account}
         {#if $tokensApproved}
           <h3 class="mb-4 text-xl font-bold text-gray-900">
             {$stakeInfo.total
-              ? `You've staked ${$stakeInfo.total} yCake`
+              ? `You've staked ${$stakeInfo.total} DAI`
               : "How much do you want to stake?"}
           </h3>
           <p class="mb-6 font-medium text-gray-500">
@@ -49,7 +49,7 @@
           Connect with MetaMask to use the app
         </h3>
         <button
-          class="flex my-auto items-center justify-center w-full min-w-xs px-5 py-3 uppercase font-bold text-white bg-blue-600 border border-transparent rounded-full hover:bg-blue-500 focus-visible:ring focus:outline-none"
+          class="flex items-center justify-center w-full px-5 py-3 my-auto font-bold text-white uppercase bg-blue-600 border border-transparent rounded-full min-w-xs hover:bg-blue-500 focus-visible:ring focus:outline-none"
           on:click={() => window.ethereum.enable()}
         >
           <span class="pr-4">
@@ -58,7 +58,7 @@
         >
       {/if}
     </div>
-    <div class="hidden lg:block mt-auto">
+    <div class="hidden mt-auto lg:block">
       <img
         src="/img/composition_1.png"
         alt="Illustration"

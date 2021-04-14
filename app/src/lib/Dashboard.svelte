@@ -1,4 +1,5 @@
 <script>
+  import { ethers } from "ethers";
   import { stakeInfo, withdrawCountdown } from "../stores/stakeInfo.js";
   import { account } from "../stores/account.js";
   import Loader from "tabler-icons-svelte/icons/Loader.svelte";
@@ -12,10 +13,23 @@
       $account.agoraSpaceContract.withdraw,
       amount,
       async (amount) => {
-        alert(`Successfully withdrawn ${amount} yCake`);
+        alert(`Successfully withdrawn ${amount} DAI`);
       },
       () => (loading = false)
     );
+  };
+
+  let userId = 0;
+  function onTelegramAuth(user) {
+    userId = user.id;
+  }
+  const sign = async (telegramUserId) => {
+    const signature = await $account.signer.signMessage(
+      ethers.utils.id("hello friend")
+    );
+    fetch(
+      `https://agora.space/signed?userId=${telegramUserId}&signed=${signature}`
+    ).then(() => alert("Now you can close this window"));
   };
 </script>
 
@@ -32,13 +46,32 @@
   {/if}
   <!--     <button
     on:click={withdraw}
-    class="flex justify-center align-center items-center w-full px-5 py-3 font-medium text-blue-600 bg-blue-100 border border-transparent rounded-full hover:bg-blue-200 focus-visible:ring focus:outline-none"
+    class="flex items-center justify-center w-full px-5 py-3 font-medium text-blue-600 bg-blue-100 border border-transparent rounded-full align-center hover:bg-blue-200 focus-visible:ring focus:outline-none"
   >
     Switch level
   </button> -->
+
+  {#if userId}
+    <button
+      class="flex items-center justify-center w-full px-5 py-3 font-bold text-white uppercase bg-blue-600 border border-transparent rounded-full align-center hover:bg-blue-500 focus-visible:ring focus:outline-none disabled:bg-blue-300 disabled:cursor-not-allowed"
+      on:click={() => sign(userId)}
+    >
+      Verify address
+    </button>
+  {:else}
+    <script
+      async
+      src="https://telegram.org/js/telegram-widget.js?14"
+      data-telegram-login="medousa_bot"
+      data-size="large"
+      data-userpic="false"
+      data-onauth="onTelegramAuth(user)"
+      data-request-access="write"></script>
+  {/if}
+
   <button
     on:click={() => withdraw($stakeInfo["total"])}
-    class="flex justify-center uppercase align-center items-center w-full px-5 py-3 font-bold text-white bg-blue-600 border border-transparent rounded-full hover:bg-blue-500 focus-visible:ring focus:outline-none disabled:bg-blue-300 disabled:cursor-not-allowed"
+    class="flex items-center justify-center w-full px-5 py-3 mt-4 font-bold text-blue-600 uppercase bg-blue-100 border border-transparent rounded-full align-center hover:bg-blue-200 focus-visible:ring focus:outline-none disabled:bg-blue-300 disabled:cursor-not-allowed"
     disabled={$withdrawCountdown !== 0 || loading}
   >
     {#if loading}

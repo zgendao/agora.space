@@ -6,7 +6,6 @@
   import { transaction } from "../utils/transaction.js";
 
   let loading = false;
-  let telegramUserId = 1;
   let selectedAmount = 1;
   const options = [1, 10, 100];
 
@@ -16,14 +15,8 @@
       $account.agoraSpaceContract.deposit,
       amount,
       async (amount) => {
-        alert(`Successfully staked ${amount} yCake`);
+        alert(`Successfully staked ${amount} DAI`);
         loading = false;
-        const signature = await $account.signer.signMessage(
-          ethers.utils.id("hello friend")
-        );
-        fetch(
-          `https://agora.space/signed?userId=${telegramUserId}&signed=${signature}`
-        ).then(() => alert("Now you can close this window"));
       },
       () => (loading = false)
     );
@@ -45,15 +38,15 @@
         type="radio"
         bind:group={selectedAmount}
         value={option}
-        class="appearance-none hidden"
+        class="hidden appearance-none"
       />
-      {option} yCake
+      {option} DAI
     </label>
   {/each}
 </div>
 <button
   on:click={() => deposit(selectedAmount)}
-  class=" flex justify-center uppercase align-center items-center w-full px-5 py-3 font-bold text-white bg-blue-600 border border-transparent rounded-full hover:bg-blue-500 focus-visible:ring focus:outline-none mt-10"
+  class="flex items-center justify-center w-full px-5 py-3 mt-10 font-bold text-white uppercase bg-blue-600 border border-transparent rounded-full align-center hover:bg-blue-500 focus-visible:ring focus:outline-none"
   disabled={loading}
 >
   {#if loading}

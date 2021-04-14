@@ -6,9 +6,9 @@ export const tokensApproved = triggerableDerived(
   account,
   async ([$account], set) => {
     if (!$account) return;
-    const { address, yCakeContract, agoraTokenContract } = $account;
+    const { address, DaiContract, agoraTokenContract } = $account;
     set(
-      (await getTokenAllowance(address, yCakeContract)) &&
+      (await getTokenAllowance(address, DaiContract)) &&
         (await getTokenAllowance(address, agoraTokenContract))
     );
   },
@@ -21,10 +21,12 @@ const getTokenAllowance = async (account, tokenContract) => {
 };
 
 export const approveToken = async (tokenContract, successFn, errorFn) => {
-  tokenContract
-    .approve(AGORASPACE_ADDRESS, MAX_VALUE)
-    .then((value) => {
+  try {
+    const tx = await tokenContract.approve(AGORASPACE_ADDRESS, MAX_VALUE);
+    tx.wait().then(() => {
       successFn && successFn();
-    })
-    .catch(() => errorFn && errorFn());
+    });
+  } catch {
+    errorFn && errorFn();
+  }
 };
