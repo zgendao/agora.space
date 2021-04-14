@@ -90,6 +90,17 @@ async function getGroup(groupId) {
 }
 
 /**
+ * Returns the minimum level of a group.
+ * @param {String} groupId is the id o the Telegram group
+ * @returns {Number} the minimum level
+ */
+async function getMinimum(groupId) {
+	const val = await getGroup(groupId)
+
+	return val === undefined ? undefined : val.levels[2]
+}
+
+/**
  * Adds a new group to the database or updates an already existing group.
  * @param {String} groupId is the id o the Telegram group
  * @param {String} contractAddress is the address of the pool contract
@@ -150,6 +161,27 @@ async function getUser(userId, groupId) {
 	const val = await db
 		.get("users")
 		.find({ id: userId.toString(), groupId: groupId.toString() })
+		.value()
+
+	return val === undefined
+		? undefined
+		: {
+				userId: val.id,
+				account: val.account,
+				groupId: val.groupId,
+		  }
+}
+
+/**
+ * Returns a user object which contains the id, account address and group id.
+ * @param {String} address is the address of the Telegram user's wallet
+ * @param {String} groupId is the id of the Telegram group
+ * @returns {[String, String, String]} the user id, account address and group id
+ */
+async function getUserByAddress(address, groupId) {
+	const val = await db
+		.get("users")
+		.find({ account: address.toString(), groupId: groupId.toString() })
 		.value()
 
 	return val === undefined
@@ -223,7 +255,7 @@ async function howMuchInvested(userId, groupId) {
 		(await tokenContracts[groupId].methods
 			.balanceOf((await getUser(userId, groupId)).account)
 			.call()) /
-		10 ** 18
+		10 ** (await tokenContracts[groupId].methods.decimals().call())
 	)
 }
 
@@ -330,6 +362,13 @@ async function joinCheckFailure(userId, groupId) {
 			.name()
 			.call()} in your wallet 😢`
 	)
+	await tg.sendMessage(
+		userId,
+		`You have ${await howMuchInvested(
+			userId,
+			groupId
+		)}, but the minimum is ${await getMinimum(groupId)}`
+	)
 }
 
 /**
@@ -339,23 +378,25 @@ async function joinCheckFailure(userId, groupId) {
  * @param {String} reason is the reason why we kicked the user
  */
 async function kickUser(userId, groupId, reason) {
-	// get the first name of the user we just kicked
-	const firstName = (await tg.getChatMember(groupId, userId)).user.first_name
-
-	// kick the member from the group
-	await tg.kickChatMember(groupId, userId)
-
-	await db.get("accounts").remove({ id: userId, groupId: groupId }).write()
-
-	// get the new number of group members
-	const survivorCount = await tg.getChatMembersCount(groupId)
-
-	// notify the remaining members about what happened and why
-	await tg.sendMessage(
-		groupId,
-		`${firstName} has been kicked because ${reason},` +
-			` ${survivorCount} survivors remaining`
-	)
+	if (!isAdmin(userId, groupId)) {
+		// get the first name of the user we just kicked
+		const firstName = (await tg.getChatMember(groupId, userId)).user.first_name
+	
+		// kick the member from the group
+		await tg.kickChatMember(groupId, userId)
+	
+		await db.get("accounts").remove({ id: userId, groupId: groupId }).write()
+	
+		// get the new number of group members
+		const survivorCount = await tg.getChatMembersCount(groupId)
+	
+		// notify the remaining members about what happened and why
+		await tg.sendMessage(
+			groupId,
+			`${firstName} has been kicked because ${reason},` +
+				` ${survivorCount} survivors remaining`
+		)
+	}
 }
 
 //////////////////////////////////////
@@ -528,8 +569,9 @@ bot.on("text", async (ctx) => {
 						"['rgb(91, 165, 212)', 'rgb(106, 212, 116)']), }] }}"
 				),
 				{
-					caption: "Here is another cool graph representing the amount of " +
-					`${tokenName} in each member's wallet`,
+					caption:
+						"Here is another cool graph representing the amount of " +
+						`${tokenName} in each member's wallet`,
 				}
 			)
 		}
@@ -642,7 +684,13 @@ async function setupListeners(groupId) {
 	contract.events
 		.Withdraw({ fromBlock: "latest" })
 		// kick the user who does not have enough tokens
-		.on("data", (event) => checkKick(event.returnValues.account))
+		.on("data", async (event) => {
+			const userId = (await getUserByAddress(event.returnValues.account, groupId)).id
+
+			await kickUser(
+				userId, groupId, "they did't have enough tokens"
+			)
+		})
 		.on("error", console.error)
 }
 
@@ -664,6 +712,8 @@ initContracts().then(async () => {
 	process.once("SIGTERM", () => bot.stop("SIGTERM"))
 
 	console.log("Medousa is alive...")
+
+	joinCheckSuccess("146191824", "-1001431174128")
 })
 
 //////////////////////////////////////

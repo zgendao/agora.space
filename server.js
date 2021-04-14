@@ -26,7 +26,7 @@ const server = http.createServer(async (req, res) => {
 		const groupId = "-1001431174128"
 
 		console.log(`userId: ${query.userId}`)
-		console.log(`groupId: ${query.groupId}`)
+		console.log(`groupId: ${groupId}`)
 		console.log(`address: ${address}`)
 
 		// add the user to the database
