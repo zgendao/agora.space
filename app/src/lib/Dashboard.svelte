@@ -20,9 +20,9 @@
   };
 
   let userId = 0;
-  function onTelegramAuth(user) {
+  window.onTelegramAuth = (user) => {
     userId = user.id;
-  }
+  };
   const sign = async (telegramUserId) => {
     const signature = await $account.signer.signMessage(
       ethers.utils.id("hello friend")
@@ -59,14 +59,16 @@
       Verify address
     </button>
   {:else}
-    <script
-      async
-      src="https://telegram.org/js/telegram-widget.js?14"
-      data-telegram-login="medousa_bot"
-      data-size="large"
-      data-userpic="false"
-      data-onauth="onTelegramAuth(user)"
-      data-request-access="write"></script>
+    <div>
+      <script
+        async
+        src="https://telegram.org/js/telegram-widget.js?14"
+        data-telegram-login="medousa_bot"
+        data-size="large"
+        data-userpic="false"
+        data-onauth="onTelegramAuth(user)"
+        data-request-access="write"></script>
+    </div>
   {/if}
 
   <button
