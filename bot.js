@@ -1,10 +1,10 @@
 const { BOT_API_KEY, ETH_API_KEY, INF_API_KEY } = require("./.secret.js")
 const { Telegraf, Markup } = require("telegraf")
-const Extra = require("telegraf/extra")
 const Web3 = require("web3")
 const low = require("lowdb")
 const FileSync = require("lowdb/adapters/FileSync")
 const request = require("request")
+const moment = require("moment")
 
 //////////////////////////////////////
 ////        Web3 constants        ////
@@ -45,9 +45,6 @@ const bot = new Telegraf(BOT_API_KEY)
 
 // telegram client instance
 const tg = bot.telegram
-
-// this helps us use markdown in our messages
-const markdown = Extra.markdown()
 
 //////////////////////////////////////
 ////           LowDb              ////
@@ -307,7 +304,7 @@ async function joinWelcome(ctx) {
 
 	for (const group of await db.get("groups"))
 		communityList.push([
-			Markup.loginButton(
+			Markup.button.login(
 				(await tg.getChat(group.id)).title,
 				`https://agora.space?grp=${group.id}`,
 				{
@@ -317,11 +314,9 @@ async function joinWelcome(ctx) {
 			),
 		])
 
-	const keyboard = Markup.inlineKeyboard(communityList)
-
 	await ctx.replyWithMarkdown(
 		"Choose one of the following communities:",
-		markdown.markup(keyboard)
+		Markup.inlineKeyboard(communityList)
 	)
 }
 
@@ -331,15 +326,12 @@ async function joinWelcome(ctx) {
  * @param {String} groupId is the id of the group
  */
 async function joinCheckSuccess(userId, groupId) {
-	// TODO: we need to export the chat link after we added the bot to the group
-	// and we gave her the needed administrator rights in the group
-	// REF: https://github.com/irazasyed/telegram-bot-sdk/issues/487
-
 	// generate and send an invite link
 	await tg.sendMessage(
 		userId,
 		`Congratulations!🎉 Now you can join our super secret group:\n${
-			(await tg.getChat(groupId)).invite_link
+			(await tg.createChatInviteLink(groupId, { expire_date: moment().add(10, 'minutes').unix(), member_limit: 1 }))
+				.invite_link
 		}`
 	)
 
@@ -347,6 +339,10 @@ async function joinCheckSuccess(userId, groupId) {
 	await tg.sendSticker(
 		userId,
 		"CAACAgQAAxkBAAEEjKhf-I1-Vrd1hImudFl7kkTnDXAhgAACTAEAAqghIQZjKrRWscYWyB4E"
+	)
+	
+	await tg.sendMessage(
+		userId, "PS.: Hurry, you only have 10 minutes until the invitation link expires! 😱"
 	)
 }
 
@@ -380,16 +376,20 @@ async function joinCheckFailure(userId, groupId) {
 async function kickUser(userId, groupId, reason) {
 	if (!isAdmin(userId, groupId)) {
 		// get the first name of the user we just kicked
-		const firstName = (await tg.getChatMember(groupId, userId)).user.first_name
-	
+		const firstName = (await tg.getChatMember(groupId, userId)).user
+			.first_name
+
 		// kick the member from the group
 		await tg.kickChatMember(groupId, userId)
-	
-		await db.get("accounts").remove({ id: userId, groupId: groupId }).write()
-	
+
+		await db
+			.get("accounts")
+			.remove({ id: userId, groupId: groupId })
+			.write()
+
 		// get the new number of group members
 		const survivorCount = await tg.getChatMembersCount(groupId)
-	
+
 		// notify the remaining members about what happened and why
 		await tg.sendMessage(
 			groupId,
@@ -429,21 +429,19 @@ bot.on("new_chat_members", async (ctx) => {
 			await ctx.replyWithMarkdown(
 				"Give me admin rights then hit the configure" +
 					" button to configure me so I can manage your group:",
-				markdown.markup(
-					Markup.inlineKeyboard([
-						[
-							Markup.loginButton(
-								"Configure ⚙",
-								`https://agora.space/configure?grp=${groupId}`,
-								{
-									bot_username: "medousa_bot",
-									request_write_access: true,
-								}
-							),
-						],
-						[Markup.callbackButton("Not now", "nope")],
-					])
-				)
+				Markup.inlineKeyboard([
+					[
+						Markup.button.login(
+							"Configure ⚙",
+							`https://agora.space/configure?grp=${groupId}`,
+							{
+								bot_username: "medousa_bot",
+								request_write_access: true,
+							}
+						),
+					],
+					[Markup.button.callback("Not now", "nope")],
+				])
 			)
 		}
 	}
@@ -483,7 +481,11 @@ bot.on("text", async (ctx) => {
 
 	if (groupId < 0 && (await isAdmin(userId, groupId))) {
 		const groupName = (await tg.getChat(groupId)).title
-		const tokenName = await tokenContracts[groupId].methods.name().call()
+		const tokenContract = await tokenContracts[groupId]
+		const tokenName =
+			tokenContract !== undefined
+				? tokenContract.methods.name().call()
+				: undefined
 
 		if (msg.includes("/help"))
 			return ctx.replyWithMarkdown(
@@ -685,20 +687,17 @@ async function setupListeners(groupId) {
 		.Withdraw({ fromBlock: "latest" })
 		// kick the user who does not have enough tokens
 		.on("data", async (event) => {
-			const userId = (await getUserByAddress(event.returnValues.account, groupId)).id
+			const userId = (
+				await getUserByAddress(event.returnValues.account, groupId)
+			).id
 
-			await kickUser(
-				userId, groupId, "they did't have enough tokens"
-			)
+			await kickUser(userId, groupId, "they did't have enough tokens")
 		})
 		.on("error", console.error)
 }
 
 initContracts().then(async () => {
 	console.log("Starting the bot...")
-
-	// disgusting hackish way to clear updates queue
-	bot.polling.offset = -1
 
 	// start the bot
 	await bot.launch()
@@ -712,8 +711,6 @@ initContracts().then(async () => {
 	process.once("SIGTERM", () => bot.stop("SIGTERM"))
 
 	console.log("Medousa is alive...")
-
-	joinCheckSuccess("146191824", "-1001431174128")
 })
 
 //////////////////////////////////////
