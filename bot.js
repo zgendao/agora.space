@@ -4,7 +4,6 @@ const Web3 = require("web3")
 const low = require("lowdb")
 const FileSync = require("lowdb/adapters/FileSync")
 const request = require("request")
-const moment = require("moment")
 
 //////////////////////////////////////
 ////        Web3 constants        ////
@@ -330,8 +329,12 @@ async function joinCheckSuccess(userId, groupId) {
 	await tg.sendMessage(
 		userId,
 		`Congratulations!🎉 Now you can join our super secret group:\n${
-			(await tg.createChatInviteLink(groupId, { expire_date: moment().add(10, 'minutes').unix(), member_limit: 1 }))
-				.invite_link
+			(
+				await tg.createChatInviteLink(groupId, {
+					expire_date: Math.floor(new Date() / 1000) + 600, // 10 minutes in the future
+					member_limit: 1,
+				})
+			).invite_link
 		}`
 	)
 
@@ -340,9 +343,10 @@ async function joinCheckSuccess(userId, groupId) {
 		userId,
 		"CAACAgQAAxkBAAEEjKhf-I1-Vrd1hImudFl7kkTnDXAhgAACTAEAAqghIQZjKrRWscYWyB4E"
 	)
-	
+
 	await tg.sendMessage(
-		userId, "PS.: Hurry, you only have 10 minutes until the invitation link expires! 😱"
+		userId,
+		"PS.: Hurry, you only have 10 minutes until the invitation link expires! 😱"
 	)
 }
 

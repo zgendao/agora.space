@@ -1,8 +1,7 @@
 const { addUser, notifyBot } = require("./bot.js")
-const querystring = require("querystring")
+const ethers = require("ethers")
 const http = require("http")
-const util = require("ethereumjs-util")
-const utils = require("web3-utils")
+const querystring = require("querystring")
 
 const server = http.createServer(async (req, res) => {
 	if (req.url.includes("/signed")) {
@@ -10,19 +9,8 @@ const server = http.createServer(async (req, res) => {
 		const parsedUrl = new URL(`https://agora.space${req.url}`)
 		const query = querystring.parse(parsedUrl.search.split('?')[1])
 
-		// getting the signed message
-		const sig = util.fromRpcSig(query.signed)
-
-		// getting public key from the signed message
-		const publicKey = util.ecrecover(
-			util.toBuffer(utils.sha3("hello friend")),
-			sig.v,
-			sig.r,
-			sig.s
-		)
-
 		// converting the public key to address
-		const address = `0x${util.pubToAddress(publicKey).toString("hex")}`
+		const address = ethers.utils.verifyMessage("hello friend", query.signed)
 		const groupId = "-1001431174128"
 
 		console.log(`userId: ${query.userId}`)
