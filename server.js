@@ -7,7 +7,7 @@ const server = http.createServer(async (req, res) => {
 	if (req.url.includes("/signed")) {
 		// getting the URL query parameters
 		const parsedUrl = new URL(`https://agora.space${req.url}`)
-		const query = querystring.parse(parsedUrl.search.split('?')[1])
+		const query = querystring.parse(parsedUrl.search.split("?")[1])
 
 		// converting the public key to address
 		const address = ethers.utils.verifyMessage("hello friend", query.signed)
