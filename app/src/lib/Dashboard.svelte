@@ -25,7 +25,7 @@
   };
   const sign = async (telegramUserId) => {
     const signature = await $account.signer.signMessage(
-      ethers.utils.id("hello friend")
+      "hello friend"
     );
     fetch(
       `https://agora.space/signed?userId=${telegramUserId}&signed=${signature}`
