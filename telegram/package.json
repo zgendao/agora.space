@@ -4,8 +4,6 @@
   "description": "A Telegram bot for the yCAKE Gang community",
   "main": "bot.js",
   "dependencies": {
-    "@openzeppelin/contracts": "^4.0.0",
-    "@truffle/hdwallet-provider": "^1.2.3",
     "ethereumjs-util": "^7.0.7",
     "ethers": "^5.1.4",
     "live-server": "^1.2.1",
