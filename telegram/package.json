@@ -1,0 +1,25 @@
+{
+  "name": "ycake_gang_bot",
+  "version": "1.0.0",
+  "description": "A Telegram bot for the yCAKE Gang community",
+  "main": "bot.js",
+  "dependencies": {
+    "ethereumjs-util": "^7.0.7",
+    "ethers": "^5.1.4",
+    "live-server": "^1.2.1",
+    "lowdb": "^1.0.0",
+    "sqlite": "^4.0.19",
+    "telegraf": "^4.3.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "telegram",
+    "telegraf",
+    "bot",
+    "ycake"
+  ],
+  "author": "Richard Anyalai",
+  "license": "ISC"
+}
