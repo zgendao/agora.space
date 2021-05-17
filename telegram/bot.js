@@ -639,16 +639,6 @@ async function getAbi(address) {
  * Simple helper to wrap the initialization of the provider and contracts.
  */
 async function initContracts() {
-  const options = {
-    // enable auto reconnection
-    reconnect: {
-      auto: true,
-      delay: 100, // ms
-      maxAttempts: 1000,
-      onTimeout: true,
-    },
-  }
-
   console.log("Initializing Ethers provider...")
 
   // initializing Ethers
@@ -676,20 +666,24 @@ async function initContracts() {
  * @param {String} groupId is the id of the group
  */
 async function setupListeners(groupId) {
-  const contract = poolContracts[groupId]
+  const poolContract = poolContracts[groupId]
+  const tokenContract = tokenContracts[groupId]
 
   // listen on deposit and withdraw events
-  contract
-    .on("Deposit", async (address) => console.log(address))
-    .on(
-      "Withdraw",
-      async (address) =>
-        await kickUser(
-          (await getUserByAddress(`${address}`, groupId)).id,
-          groupId,
-          "they did't have enough tokens"
-        )
-    )
+  tokenContract.on("Transfer", async (from, to, amount) => {
+    const quant = amount / 10 ** (await tokenContract.decimals())
+
+    console.log(`${from} sent ${quant} ${await tokenContract.name()} to ${to}`)
+
+    const fromUser = await getUserByAddress(from, groupId)
+
+    if (fromUser !== undefined) {
+      const fromId = fromUser.id
+
+      if (!(await userHasInvestedEnoughTokens(fromId, groupId)))
+        await kickUser(fromId, groupId, "they did't have enough tokens")
+    } else console.log(`User with address ${from} is not in the database`)
+  })
 }
 
 initContracts().then(async () => {
