@@ -1,5 +1,7 @@
 <h1 align="center">Agora</h1>
 
+<h3 align="center"> This repository has been archived. You can visit the new Agora Organization <a href="https://github.com/AgoraSpaceDAO">here</a>. </h3>
+
 <p align="center">
 	<img src="docs/img/agora.png" width="70%" />
 </p>
